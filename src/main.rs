@@ -850,7 +850,8 @@ fn main() -> Result<(), slint::PlatformError> {
             let title = if loaded { ui.get_track_title().to_string() } else { String::new() };
             if let Some(keys) = media_keys.as_mut() {
                 if loaded {
-                    keys.set_track(&title, f64::from(ui.get_duration()));
+                    let cover = ui.get_track_cover_link();
+                    keys.set_track(&title, f64::from(ui.get_duration()), (!cover.is_empty()).then_some(cover.as_str()));
                 }
                 // A jump since the last tick (a seek, a new track) is reported at once.
                 if (position - last_position.get()).abs() > 1.5 {
@@ -1500,6 +1501,7 @@ fn refresh(ui: &AppWindow, app: &Arc<App>, lists: &Lists, thumbs: &Thumbs, shown
         *shown_track.borrow_mut() = current_url;
     }
     let cover_id = now.index.and_then(|i| tracks.get(i)).and_then(|t| thumbs::video_id(&t.url));
+    ui.set_track_cover_link(cover_id.as_deref().map(thumbs::link).unwrap_or_default().into());
     thumbs.set_cover(ui, cover_id);
 
     ui.set_has_track(now.index.is_some());

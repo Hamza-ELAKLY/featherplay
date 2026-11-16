@@ -37,7 +37,7 @@ pub type Handler = Arc<dyn Fn(Command) + Send + Sync>;
 /// nothing changed, so they can be sent freely.
 pub struct MediaKeys {
     controls: MediaControls,
-    track: Option<(String, u64)>,
+    track: Option<(String, u64, Option<String>)>,
     state: Option<(bool, bool)>,
     /// When the position was last reported. The OS shows what it was last told, so
     /// it is retold every second while playing.
@@ -80,14 +80,17 @@ impl MediaKeys {
         Ok(Self { controls, track: None, state: None, reported: None })
     }
 
-    pub fn set_track(&mut self, title: &str, duration: f64) {
-        let key = (title.to_string(), duration as u64);
+    /// `cover` is a link to the track's picture, which Windows fetches itself to show in its
+    /// media overlay.
+    pub fn set_track(&mut self, title: &str, duration: f64, cover: Option<&str>) {
+        let key = (title.to_string(), duration as u64, cover.map(str::to_string));
         if self.track.as_ref() == Some(&key) {
             return;
         }
         let metadata = MediaMetadata {
             title: Some(title),
             duration: (duration > 0.0).then(|| Duration::from_secs_f64(duration)),
+            cover_url: cover,
             ..Default::default()
         };
         if self.controls.set_metadata(metadata).is_ok() {
