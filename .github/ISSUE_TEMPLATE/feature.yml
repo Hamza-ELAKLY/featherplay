@@ -1,0 +1,22 @@
+name: Feature request
+description: An idea to make Featherplay better.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: want
+    attributes:
+      label: What would you like to do?
+      description: Describe the need, not only the control you imagine.
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: How do you do it today?
+  - type: checkboxes
+    id: light
+    attributes:
+      label: Staying light
+      options:
+        - label: I understand Featherplay favours staying small and fast over adding features.
+          required: true

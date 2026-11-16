@@ -1,0 +1,37 @@
+name: Bug report
+description: Something doesn't work as it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Featherplay version
+      description: Shown at the bottom of Settings.
+      placeholder: "0.1.1"
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: System
+      placeholder: "Windows 11 23H2"
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Link
+      description: The public link that misbehaved, if the problem is with one.
+  - type: textarea
+    id: message
+    attributes:
+      label: Message or crash log
+      description: The message the app showed, or the contents of data\crash.log next to featherplay.exe.
+      render: text

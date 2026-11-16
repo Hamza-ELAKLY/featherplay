@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/Hamza-ELAKLY/featherplay/discussions
+    about: Ask how something works, or talk an idea through, before it becomes an issue.
+  - name: A video won't play anywhere, or yt-dlp can't read it
+    url: https://github.com/yt-dlp/yt-dlp/issues
+    about: Problems with YouTube itself are yt-dlp's to fix; Featherplay picks up its updates weekly.

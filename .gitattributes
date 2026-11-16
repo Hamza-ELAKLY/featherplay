@@ -1,0 +1,6 @@
+# Text is kept with Unix line endings in the repository; the release script converts
+# the text files it ships to Windows line endings itself.
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.ttf binary

@@ -1,0 +1,3441 @@
+import { AboutSlint, ListView, Palette } from "std-widgets.slint";
+import "./fonts/PlusJakartaSans.ttf";
+
+// Every colour the window uses, named for what it does. A theme is one set of these.
+export global Theme {
+    in-out property <bool> light;
+
+    out property <color> ground: light ? #f4f4f6 : #0b0b0d;
+    out property <color> surface: light ? #ffffff : #19191d;
+    out property <color> raised: light ? #e9e9ee : #26262b;
+    out property <color> border: light ? #e0e0e6 : #33333a;
+    out property <color> hover: light ? #ececf1 : #1e1e23;
+    out property <color> pressed: light ? #e2e2e8 : #26262c;
+    out property <color> track: light ? #dcdce3 : #2c2c32;
+
+    out property <color> text: light ? #17171c : #efeff3;
+    out property <color> muted: light ? #5d5d68 : #a9a9b3;
+    out property <color> faint: light ? #686872 : #8d8d97;
+
+    out property <color> accent: light ? #c42f45 : #d33a51;
+    out property <color> accent-text: light ? #a9283c : #f48c9b;
+    out property <color> on-accent: #ffffff;
+    out property <color> tint: light ? #fbe8eb : #24171b;
+    out property <color> soft: light ? #f6dce1 : #2b1a1f;
+    out property <color> card: light ? #ffffff : #1a1518;
+    out property <color> playhead: light ? #e5899a : #f7b7c0;
+    out property <color> wave-rest: light ? #d6d6de : #303037;
+}
+
+// Icon paths on a 24x24 grid.
+global Icons {
+    out property <string> play: "M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z";
+    out property <string> pause: "M7 5h3.5v14H7zM13.5 5H17v14h-3.5z";
+    out property <string> previous: "M6 6h2v12H6zm3.5 6l8.5 6V6z";
+    out property <string> next: "M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z";
+    out property <string> repeat: "M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z";
+    out property <string> shuffle: "M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z";
+    out property <string> pin: "M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z";
+    out property <string> add: "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z";
+    out property <string> chevron-down: "M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z";
+    out property <string> chevron-right: "M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z";
+    out property <string> close: "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z";
+    out property <string> search: "M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z";
+    out property <string> muted: "M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.8 8.8 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z";
+    // A feather in outline, for empty lists.
+    out property <string> feather: "M19.8 4.2C15.5 2 9.5 4 7 8.5S5.2 16.5 6.5 17.5C8 18.8 13.5 18 16.6 14.1S21.2 6.6 19.8 4.2Z M17.5 6.5 4 20 M13.2 10.9 9.6 10.4 M15.6 8.4 14.8 5.5";
+    out property <string> settings: "M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.48.48 0 0 0-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 15.6 12 3.6 3.6 0 0 1 12 15.6z";
+    out property <string> volume: "M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z";
+    out property <string> heart: "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z";
+    out property <string> back: "M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z";
+    out property <string> refresh: "M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z";
+}
+
+// One action of a track's right-click menu.
+export struct MenuEntry {
+    label: string,
+    // Named back to the app when chosen.
+    action: string,
+    // A line above it, between groups.
+    separated: bool,
+}
+
+// A row of the Library: the liked videos, or one of the channel's playlists.
+export struct LibraryRow {
+    id: string,
+    title: string,
+    // "Private · 12 tracks".
+    meta: string,
+    // The video whose thumbnail stands for it; empty for the liked videos.
+    thumb-id: string,
+    thumb: image,
+    liked: bool,
+    pinned: bool,
+}
+
+export struct QueueRow {
+    title: string,
+    // "channel · 6:55", or why the track can't play.
+    meta: string,
+    current: bool,
+    unavailable: bool,
+    pinned: bool,
+    // The video's id, for its thumbnail; empty for links that aren't YouTube videos.
+    id: string,
+    thumb: image,
+}
+
+global Format {
+    // m:ss, or h:mm:ss for long tracks.
+    public pure function clock(seconds: float) -> string {
+        if seconds < 0 {
+            return "0:00";
+        }
+        let total = floor(seconds);
+        let h = floor(total / 3600);
+        let m = floor(mod(total, 3600) / 60);
+        let s = mod(total, 60);
+        let ss = (s < 10 ? "0" : "") + s;
+        if h > 0 {
+            return h + ":" + (m < 10 ? "0" : "") + m + ":" + ss;
+        }
+        return m + ":" + ss;
+    }
+}
+
+// A soft outline just outside a control that has keyboard focus. Controls take focus
+// from Tab only, never from a click, so mouse users don't see it.
+component FocusRing inherits Rectangle {
+    in property <length> radius;
+    x: -3px;
+    y: -3px;
+    border-radius: root.radius + 3px;
+    border-width: 2px;
+    border-color: Theme.accent;
+}
+
+component IconButton inherits Rectangle {
+    in property <string> icon;
+    in property <length> icon-size: 20px;
+    in property <bool> enabled: true;
+    // Highlighted, for toggles that are on.
+    in property <bool> active;
+    // Drawn quieter when off, for buttons repeated on every row.
+    in property <bool> subtle;
+    // Whether Tab stops here; the buttons that only show on hover don't.
+    in property <bool> focusable: true;
+    callback clicked;
+
+    width: 40px;
+    height: 40px;
+    border-radius: self.height / 2;
+    background: root.active ? Theme.soft : touch.pressed ? Theme.pressed : touch.has-hover && root.enabled ? Theme.hover : transparent;
+    animate background { duration: 160ms; }
+
+    Path {
+        width: root.icon-size;
+        height: root.icon-size;
+        viewbox-width: 24;
+        viewbox-height: 24;
+        commands: root.icon;
+        fill: !root.enabled ? Theme.faint : root.active ? Theme.accent-text : root.subtle && !touch.has-hover ? Theme.muted : Theme.text;
+        animate fill { duration: 160ms; }
+    }
+
+    focus := FocusScope {
+        enabled: root.enabled && root.focusable;
+        focus-on-click: false;
+        key-pressed(event) => {
+            if event.text == Key.Return || event.text == Key.Space {
+                root.clicked();
+                return accept;
+            }
+            reject
+        }
+    }
+    if focus.has-focus: FocusRing {
+        width: root.width + 6px;
+        height: root.height + 6px;
+        radius: root.border-radius;
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// A text button without a frame, for small actions like Clear.
+// Google's "Sign in with Google" button, drawn to Google's branding rules: the four-colour
+// "G" as Google draws it, the label in Roboto Medium (outlines, made by
+// scripts/google_button.py, so the app carries no font for it), Google's light or dark
+// colours, and a pill shape. Not to be recoloured or reworded.
+component GoogleButton inherits Rectangle {
+    // Set by the app (`GOOGLE_LABEL`): the label's outlines.
+    in property <string> label;
+    callback clicked;
+    private property <bool> dark: !Theme.light;
+
+    height: 40px;
+    width: 174px;
+    border-radius: 20px;
+    background: (root.dark ? #131314 : #ffffff).mix(root.dark ? #e3e3e3 : #1f1f1f, touch.pressed ? 0.88 : touch.has-hover ? 0.92 : 1);
+    border-width: 1px;
+    border-color: root.dark ? #8e918f : #747775;
+    accessible-role: button;
+    accessible-label: "Sign in with Google";
+    accessible-action-default => { root.clicked(); }
+
+    // The "G", on Google's 48-unit grid.
+    Rectangle {
+        x: 12px;
+        y: (parent.height - self.height) / 2;
+        width: 20px;
+        height: 20px;
+        for part in [
+            { colour: #ea4335, path: "M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" },
+            { colour: #4285f4, path: "M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" },
+            { colour: #fbbc05, path: "M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" },
+            { colour: #34a853, path: "M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" },
+        ]: Path {
+            width: 20px;
+            height: 20px;
+            viewbox-width: 48;
+            viewbox-height: 48;
+            commands: part.path;
+            fill: part.colour;
+        }
+    }
+    // The label, in Roboto Medium, as outlines (from scripts/google_button.py). Read as
+    // text when the button is first shown, which costs far less than compiling it in.
+    Path {
+        x: 42px;
+        y: (parent.height - self.height) / 2;
+        width: 120.4px;
+        height: 20px;
+        viewbox-width: 120.4;
+        viewbox-height: 20;
+        commands: root.label;
+        fill: root.dark ? #e3e3e3 : #1f1f1f;
+    }
+    focus := FocusScope {
+        focus-on-click: false;
+        key-pressed(event) => {
+            if event.text == Key.Return || event.text == Key.Space {
+                root.clicked();
+                return accept;
+            }
+            reject
+        }
+    }
+    if focus.has-focus: FocusRing {
+        width: parent.width + 6px;
+        height: parent.height + 6px;
+        radius: 20px;
+    }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+component TextButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    // Drawn in the accent, for the one action a panel is asking for.
+    in property <bool> accent;
+    callback clicked;
+
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-action-default => { root.clicked(); }
+
+    height: 30px;
+    border-radius: 9px;
+    background: touch.has-hover && root.enabled ? Theme.hover : transparent;
+    animate background { duration: 160ms; }
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        Text {
+            text: root.text;
+            font-size: 13px;
+            font-weight: 600;
+            color: !root.enabled ? Theme.faint : root.accent ? Theme.accent-text : Theme.muted;
+            vertical-alignment: center;
+        }
+    }
+    focus := FocusScope {
+        enabled: root.enabled;
+        focus-on-click: false;
+        key-pressed(event) => {
+            if event.text == Key.Return || event.text == Key.Space {
+                root.clicked();
+                return accept;
+            }
+            reject
+        }
+    }
+    if focus.has-focus: FocusRing {
+        width: root.width + 6px;
+        height: root.height + 6px;
+        radius: root.border-radius;
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.clicked(); }
+    }
+    @children
+}
+
+// The search box: Enter plays (or searches); the plus adds to the queue instead.
+// A key, drawn as a small keycap, for hints.
+component Keycap inherits Rectangle {
+    in property <string> text;
+    width: label.preferred-width + 12px;
+    height: 20px;
+    border-radius: 5px;
+    background: Theme.raised;
+    border-width: 1px;
+    border-color: Theme.border;
+    label := Text {
+        text: root.text;
+        font-size: 11px;
+        font-weight: 700;
+        color: Theme.text;
+    }
+}
+
+// A hint's words between keycaps.
+component HintText inherits Text {
+    font-size: 12px;
+    font-weight: 500;
+    color: Theme.muted;
+    vertical-alignment: center;
+}
+
+component SearchBox inherits Rectangle {
+    // `true` to play now (Enter), `false` to add to the end of the queue (Shift+Enter, +).
+    callback submit(string, bool);
+    out property <bool> typing: input.has-focus;
+    out property <string> text: input.text;
+    // Whether what's typed is a link (to open) rather than words (to search for).
+    in property <bool> link;
+    // So the window's shortcuts can put the cursor here.
+    public function focus-input() {
+        input.focus();
+    }
+
+    height: 46px;
+    border-radius: 14px;
+    background: Theme.surface;
+    border-width: 1px;
+    border-color: input.has-focus ? Theme.accent : Theme.border;
+    animate border-color { duration: 160ms; }
+
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 6px;
+        spacing: 10px;
+        Path {
+            width: 18px;
+            height: 18px;
+            y: (parent.height - self.height) / 2;
+            viewbox-width: 24;
+            viewbox-height: 24;
+            commands: Icons.search;
+            fill: Theme.muted;
+        }
+        Rectangle {
+            horizontal-stretch: 1;
+            // A long link scrolls inside the box rather than running out of it: a text
+            // field asks for its text's width, so the box must be allowed to be narrower.
+            min-width: 0px;
+            preferred-width: 0px;
+            clip: true;
+            // The text, its cursor and the hint share one box, centred the same way.
+            input := TextInput {
+                width: 100%;
+                height: 100%;
+                vertical-alignment: center;
+                font-size: 14px;
+                font-weight: 500;
+                color: Theme.text;
+                selection-background-color: Theme.soft;
+                selection-foreground-color: Theme.text;
+                single-line: true;
+                accepted => {
+                    if self.text != "" {
+                        root.submit(self.text, true);
+                        self.text = "";
+                    }
+                }
+                // Shift+Enter adds to the queue, as the + button does.
+                key-pressed(event) => {
+                    if event.text == Key.Return && event.modifiers.shift {
+                        if self.text != "" {
+                            root.submit(self.text, false);
+                            self.text = "";
+                        }
+                        return accept;
+                    }
+                    reject
+                }
+            }
+            // Right-click: the usual editing menu.
+            ContextMenuArea {
+                Menu {
+                    MenuItem {
+                        title: "Undo";
+                        activated => { input.undo(); }
+                    }
+                    MenuItem {
+                        title: "Redo";
+                        activated => { input.redo(); }
+                    }
+                    MenuSeparator { }
+                    MenuItem {
+                        title: "Cut";
+                        enabled: input.text != "";
+                        activated => { input.cut(); }
+                    }
+                    MenuItem {
+                        title: "Copy";
+                        enabled: input.text != "";
+                        activated => { input.copy(); }
+                    }
+                    MenuItem {
+                        title: "Paste";
+                        activated => {
+                            input.focus();
+                            input.paste();
+                        }
+                    }
+                    MenuSeparator { }
+                    MenuItem {
+                        title: "Select all";
+                        enabled: input.text != "";
+                        activated => { input.select-all(); }
+                    }
+                }
+            }
+            if input.text == "": Text {
+                x: 0;
+                width: 100%;
+                height: 100%;
+                text: "Search YouTube or paste a link";
+                font-size: 14px;
+                font-weight: 500;
+                color: Theme.faint;
+                vertical-alignment: center;
+            }
+        }
+        Rectangle {
+            width: 34px;
+            IconButton {
+                width: 34px;
+                height: 34px;
+                y: (parent.height - self.height) / 2;
+                border-radius: 10px;
+                icon: Icons.add;
+                icon-size: 18px;
+                enabled: input.text != "";
+                clicked => {
+                    root.submit(input.text, false);
+                    input.text = "";
+                }
+            }
+            Tooltip {
+                text: @markdown("Add to the end of the queue (Shift+Enter)");
+            }
+        }
+    }
+
+}
+
+// A thin slider: a track, its filled part and a round knob. Drag, click or scroll it.
+component ThinSlider inherits Rectangle {
+    in-out property <float> value;
+    in property <float> maximum: 1;
+    in property <color> fill: Theme.muted;
+    callback moved(float);
+    callback released(float);
+    callback scrolled(float);
+
+    min-height: 16px;
+    private property <float> fraction: root.maximum > 0 ? clamp(root.value / root.maximum, 0, 1) : 0;
+
+    Rectangle {
+        y: (parent.height - self.height) / 2;
+        height: 4px;
+        border-radius: 2px;
+        background: Theme.track;
+        Rectangle {
+            x: 0;
+            width: parent.width * root.fraction;
+            height: parent.height;
+            border-radius: 2px;
+            background: root.fill;
+        }
+    }
+    Rectangle {
+        x: parent.width * root.fraction - self.width / 2;
+        y: (parent.height - self.height) / 2;
+        width: touch.has-hover || touch.pressed ? 14px : 12px;
+        height: self.width;
+        border-radius: self.width / 2;
+        background: Theme.text;
+        animate width { duration: 120ms; }
+    }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down {
+                root.value = clamp(self.mouse-x / self.width, 0, 1) * root.maximum;
+                root.moved(root.value);
+            }
+            if event.kind == PointerEventKind.up {
+                root.released(root.value);
+            }
+        }
+        moved => {
+            root.value = clamp(self.mouse-x / self.width, 0, 1) * root.maximum;
+            root.moved(root.value);
+        }
+        scroll-event(event) => {
+            if event.delta-y == 0 {
+                return reject;
+            }
+            root.scrolled(event.delta-y > 0 ? 1 : -1);
+            accept
+        }
+    }
+}
+
+// The seek bar: the track's loudness as bars, the played part in the accent, and a thin
+// line with a knob underneath. Click or drag anywhere; hovering shows the time.
+component Waveform inherits Rectangle {
+    // Loudness per slice of the track, 0 to 1; a negative level is not known yet.
+    in property <[float]> levels;
+    in property <float> duration;
+    in property <float> position;
+    in property <bool> enabled: true;
+    // A track is buffering: a soft light travels along the bars until it plays.
+    in property <bool> loading;
+    out property <bool> seeking: touch.pressed;
+    callback seek(float);
+
+    // Where the light is, in bars; read only while loading, so nothing redraws otherwise.
+    private property <float> shimmer: root.loading ? Math.mod(animation-tick() / 1400ms, 1) * (root.levels.length + 24) - 12 : -100;
+
+    private property <float> pointer: clamp(touch.mouse-x / self.width, 0, 1);
+    private property <float> fraction: touch.pressed ? root.pointer : root.duration > 0 ? clamp(root.position / root.duration, 0, 1) : 0;
+    // How many bars are played, the last one only partly.
+    private property <float> filled: root.fraction * root.levels.length;
+    private property <int> played: floor(root.filled);
+    // The renderer draws only whole pixels, so the playhead's edge would jump a pixel at
+    // a time. It is split into the whole pixels covered and how far into the next one it
+    // is; that pixel is drawn in part, which makes the edge glide as on a GPU.
+    private property <length> head: root.width * root.fraction;
+    private property <length> head-whole: floor(root.head / 1phx) * 1phx;
+    private property <float> head-part: (root.head - root.head-whole) / 1phx;
+
+    height: 76px;
+
+    HorizontalLayout {
+        y: 0;
+        width: parent.width;
+        height: 52px;
+        spacing: 1.5px;
+        for level[index] in root.levels: Rectangle {
+            horizontal-stretch: 1;
+            Rectangle {
+                y: (parent.height - self.height) / 2;
+                height: level < 0 ? 4px : max(4px, parent.height * level);
+                border-radius: 1px;
+                clip: index == root.played;
+                background: root.loading ? Theme.wave-rest.mix(Theme.faint, 1 - max(0, 1 - abs(index - root.shimmer) / 10))
+                    : !root.enabled ? Theme.wave-rest : index < root.played ? Theme.accent : index == root.played ? Theme.playhead : Theme.wave-rest;
+                // A new shape sweeps in from the left, bar after bar.
+                animate height { duration: 420ms; delay: index * 7ms; easing: ease-out; }
+                if index == root.played && root.enabled: Rectangle {
+                    private property <length> fill: parent.width * (root.filled - root.played);
+                    private property <length> whole: floor(self.fill / 1phx) * 1phx;
+                    Rectangle {
+                        x: 0;
+                        width: parent.whole;
+                        background: Theme.accent;
+                    }
+                    Rectangle {
+                        x: parent.whole;
+                        width: 1phx;
+                        background: Theme.accent.with-alpha((parent.fill - parent.whole) / 1phx);
+                    }
+                }
+            }
+        }
+    }
+
+    Rectangle {
+        y: 58px;
+        width: parent.width;
+        height: 12px;
+        Rectangle {
+            y: (parent.height - self.height) / 2;
+            height: 3px;
+            border-radius: 2px;
+            background: Theme.track;
+            Rectangle {
+                x: 0;
+                width: root.head-whole;
+                height: parent.height;
+                border-radius: 2px;
+                background: Theme.accent;
+            }
+            Rectangle {
+                x: root.head-whole;
+                width: 1phx;
+                height: parent.height;
+                background: Theme.accent.with-alpha(root.head-part);
+            }
+        }
+        // The knob, drawn at the whole pixel and again one pixel on, as strongly as the
+        // playhead has moved into that pixel: both dark rings first, then both discs, so
+        // each edge blends only with what really lies under it.
+        for step in 2: Rectangle {
+            x: root.head-whole + step * 1phx - self.width / 2;
+            width: 12px;
+            height: 12px;
+            border-radius: 6px;
+            background: Theme.ground.with-alpha(step == 0 ? 1 : root.head-part);
+        }
+        for step in 2: Rectangle {
+            x: root.head-whole + step * 1phx - self.width / 2;
+            y: (parent.height - self.height) / 2;
+            width: 6px;
+            height: 6px;
+            border-radius: 3px;
+            background: (root.enabled ? Theme.text : Theme.faint).with-alpha(step == 0 ? 1 : root.head-part);
+        }
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: MouseCursor.pointer;
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.up {
+                root.seek(root.pointer * root.duration);
+            }
+        }
+    }
+
+    // The time a click would jump to, above the spot under the pointer.
+    if (touch.has-hover || touch.pressed) && root.enabled: Rectangle {
+        x: clamp(touch.mouse-x - self.width / 2, 0, root.width - self.width);
+        y: -28px;
+        width: bubble.preferred-width + 16px;
+        height: 24px;
+        border-radius: 8px;
+        background: Theme.raised;
+        bubble := Text {
+            text: Format.clock(root.pointer * root.duration);
+            font-size: 12px;
+            font-weight: 600;
+            color: Theme.text;
+        }
+    }
+}
+
+// One track in a list, with its buttons (pin, add, remove) at the end. Where the list allows, a row can be dragged up or
+// down to a new place; the rows it passes step aside.
+component TrackRow inherits Rectangle {
+    in property <QueueRow> item;
+    in property <bool> show-thumb: true;
+    in property <bool> can-add;
+    in property <bool> can-remove;
+    in property <bool> can-drag;
+    // This row's place in its list, and the drag under way in it (-1: none).
+    in property <int> index;
+    in property <int> drag-from: -1;
+    in property <int> drag-to: -1;
+    // The list's keyboard cursor is on this row.
+    in property <bool> focused;
+    callback clicked;
+    // Right-clicked, at this point of the window.
+    callback menu(length, length);
+    callback pin;
+    callback add;
+    callback remove;
+    // A drag of this row, `rows` up (negative) or down, while it goes on, and once it ends.
+    callback dragging(int);
+    callback dropped(int);
+    // Asks for the thumbnail once the row is on screen; list rows are made only as they scroll into view.
+    callback want-thumb(string);
+
+    init => { root.ask-thumb(); }
+    changed item => { root.ask-thumb(); }
+    function ask-thumb() {
+        if root.show-thumb && root.item.id != "" && root.item.thumb.width == 0 {
+            root.want-thumb(root.item.id);
+        }
+    }
+
+    private property <bool> held: root.drag-from == root.index && root.drag-from >= 0;
+    private property <length> drag-offset;
+    private property <bool> dragged;
+    private property <int> rows: round(root.drag-offset / root.height);
+    // Where this row stands aside to while another is dragged past it.
+    private property <length> shift: root.drag-from < 0 || root.held ? 0px
+        : root.index > root.drag-from && root.index <= root.drag-to ? -root.height
+        : root.index < root.drag-from && root.index >= root.drag-to ? root.height
+        : 0px;
+
+    height: 60px;
+    z: root.held ? 1 : 0;
+
+    touch := TouchArea {
+        mouse-cursor: root.held ? MouseCursor.grabbing : MouseCursor.pointer;
+        clicked => {
+            if !root.dragged {
+                root.clicked();
+            }
+        }
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.right {
+                root.menu(root.absolute-position.x + self.mouse-x, root.absolute-position.y + self.mouse-y);
+            } else if event.kind == PointerEventKind.down {
+                root.dragged = false;
+            } else if event.kind == PointerEventKind.up && root.dragged {
+                let rows = root.rows;
+                root.drag-offset = 0;
+                root.dropped(rows);
+            }
+        }
+        moved => {
+            if root.can-drag && self.pressed {
+                if !root.dragged && abs(self.mouse-y - self.pressed-y) > 6px {
+                    root.dragged = true;
+                }
+                if root.dragged {
+                    root.drag-offset = self.mouse-y - self.pressed-y;
+                    root.dragging(root.rows);
+                }
+            }
+        }
+
+    body := Rectangle {
+        y: root.held ? root.drag-offset : root.shift;
+        // Snaps into place once the drop lands, rather than sliding over the reordered list.
+        animate y { duration: root.held || root.drag-from < 0 ? 0ms : 180ms; easing: ease-out; }
+        height: root.height;
+        border-radius: 14px;
+        background: root.held ? Theme.raised : root.item.current ? Theme.tint : touch.has-hover && root.drag-from < 0 ? Theme.hover : transparent;
+        animate background { duration: 160ms; }
+        drop-shadow-blur: root.held ? 18px : 0px;
+        drop-shadow-offset-y: root.held ? 6px : 0px;
+        drop-shadow-color: #00000060;
+
+        // Inside the row, not around it: the list clips at its edges.
+        if root.focused: Rectangle {
+            border-radius: 14px;
+            border-width: 2px;
+            border-color: Theme.accent;
+        }
+
+        HorizontalLayout {
+            padding-left: 8px;
+            padding-right: 6px;
+            spacing: 12px;
+            if root.show-thumb: Rectangle {
+                width: 72px;
+                height: 40px;
+                y: (parent.height - self.height) / 2;
+                border-radius: 9px;
+                clip: true;
+                background: Theme.raised;
+                Image {
+                    width: 100%;
+                    height: 100%;
+                    source: root.item.thumb;
+                    image-fit: ImageFit.cover;
+                    opacity: root.item.unavailable ? 0.35 : 1;
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                spacing: 3px;
+                horizontal-stretch: 1;
+                Text {
+                    text: root.item.title;
+                    color: root.item.unavailable ? Theme.faint : root.item.current ? Theme.accent-text : Theme.text;
+                    font-size: 14px;
+                    font-weight: root.item.current ? 700 : 600;
+                    overflow: elide;
+                }
+                Text {
+                    text: root.item.meta;
+                    color: root.item.unavailable ? Theme.faint : Theme.muted;
+                    font-size: 12px;
+                    font-weight: 500;
+                    overflow: elide;
+                }
+            }
+            HorizontalLayout {
+                spacing: 2px;
+                alignment: end;
+                IconButton {
+                    width: 34px;
+                    height: 34px;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: 10px;
+                    icon: Icons.pin;
+                    icon-size: 16px;
+                    focusable: false;
+                    subtle: !root.item.pinned;
+                    active: root.item.pinned;
+                    clicked => { root.pin(); }
+                }
+                if root.can-add: IconButton {
+                    width: 34px;
+                    height: 34px;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: 10px;
+                    icon: Icons.add;
+                    icon-size: 17px;
+                    focusable: false;
+                    subtle: true;
+                    clicked => { root.add(); }
+                }
+                if root.can-remove: IconButton {
+                    width: 34px;
+                    height: 34px;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: 10px;
+                    icon: Icons.close;
+                    icon-size: 16px;
+                    focusable: false;
+                    subtle: true;
+                    clicked => { root.remove(); }
+                }
+            }
+        }
+    }
+    }
+}
+
+// A row of the Library: a playlist (or the liked videos), with Play, Shuffle and Add on
+// hover; a click opens it.
+component PlaylistRow inherits Rectangle {
+    in property <LibraryRow> item;
+    in property <bool> show-thumb: true;
+    callback open;
+    callback play;
+    callback shuffle;
+    callback add;
+    callback pin;
+    callback menu(length, length);
+    callback want-thumb(string);
+
+    init => { root.ask-thumb(); }
+    changed item => { root.ask-thumb(); }
+    function ask-thumb() {
+        if root.show-thumb && root.item.thumb-id != "" && root.item.thumb.width == 0 {
+            root.want-thumb(root.item.thumb-id);
+        }
+    }
+
+    height: 60px;
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.open(); }
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.right {
+                root.menu(root.absolute-position.x + self.mouse-x, root.absolute-position.y + self.mouse-y);
+            }
+        }
+        Rectangle {
+            border-radius: 14px;
+            background: touch.has-hover ? Theme.hover : transparent;
+            animate background { duration: 160ms; }
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 6px;
+                spacing: 12px;
+                if root.show-thumb || root.item.liked: Rectangle {
+                    width: 72px;
+                    height: 40px;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: 9px;
+                    clip: true;
+                    background: root.item.liked ? Theme.soft : Theme.raised;
+                    if root.item.liked: Path {
+                        width: 20px;
+                        height: 20px;
+                        viewbox-width: 24;
+                        viewbox-height: 24;
+                        commands: Icons.heart;
+                        fill: Theme.accent-text;
+                    }
+                    if !root.item.liked: Image {
+                        width: 100%;
+                        height: 100%;
+                        source: root.item.thumb;
+                        image-fit: ImageFit.cover;
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 3px;
+                    horizontal-stretch: 1;
+                    Text {
+                        text: root.item.title;
+                        color: Theme.text;
+                        font-size: 14px;
+                        font-weight: 600;
+                        overflow: elide;
+                    }
+                    Text {
+                        text: root.item.meta;
+                        color: Theme.muted;
+                        font-size: 12px;
+                        font-weight: 500;
+                        overflow: elide;
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 2px;
+                    alignment: end;
+                    opacity: touch.has-hover ? 1 : 0;
+                    animate opacity { duration: 140ms; }
+                    IconButton {
+                        width: 34px;
+                        height: 34px;
+                        y: (parent.height - self.height) / 2;
+                        border-radius: 10px;
+                        icon: Icons.play;
+                        icon-size: 16px;
+                        focusable: false;
+                        subtle: true;
+                        clicked => { root.play(); }
+                    }
+                    IconButton {
+                        width: 34px;
+                        height: 34px;
+                        y: (parent.height - self.height) / 2;
+                        border-radius: 10px;
+                        icon: Icons.shuffle;
+                        icon-size: 16px;
+                        focusable: false;
+                        subtle: true;
+                        clicked => { root.shuffle(); }
+                    }
+                    IconButton {
+                        width: 34px;
+                        height: 34px;
+                        y: (parent.height - self.height) / 2;
+                        border-radius: 10px;
+                        icon: Icons.add;
+                        icon-size: 17px;
+                        focusable: false;
+                        subtle: true;
+                        clicked => { root.add(); }
+                    }
+                    IconButton {
+                        width: 34px;
+                        height: 34px;
+                        y: (parent.height - self.height) / 2;
+                        border-radius: 10px;
+                        icon: Icons.pin;
+                        icon-size: 16px;
+                        focusable: false;
+                        subtle: !root.item.pinned;
+                        active: root.item.pinned;
+                        clicked => { root.pin(); }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// A list's scroll bar, in a lane of its own beside the rows: drag the thumb, or press
+// anywhere along the rail to jump there.
+component ScrollRail inherits Rectangle {
+    // The list's scroll offset (zero or negative), its content and its visible height.
+    in-out property <length> offset;
+    in property <length> content;
+    in property <length> visible-height;
+
+    private property <length> range: max(1px, root.content - root.visible-height);
+    private property <length> thumb: max(32px, root.height * root.visible-height / max(1px, root.content));
+    private property <length> travel: root.height - root.thumb;
+
+    width: 10px;
+    visible: root.content > root.visible-height + 1px;
+
+    function jump(y: length) {
+        root.offset = -clamp((y - root.thumb / 2) / max(1px, root.travel), 0, 1) * root.range;
+    }
+
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        width: touch.has-hover || touch.pressed ? 6px : 4px;
+        animate width { duration: 140ms; }
+        border-radius: self.width / 2;
+        background: touch.has-hover || touch.pressed ? Theme.track : transparent;
+        animate background { duration: 140ms; }
+    }
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: root.travel * clamp(-root.offset / root.range, 0, 1);
+        width: touch.has-hover || touch.pressed ? 6px : 4px;
+        animate width { duration: 140ms; }
+        height: root.thumb;
+        border-radius: self.width / 2;
+        background: touch.pressed ? Theme.muted : touch.has-hover ? Theme.faint : Theme.raised;
+        animate background { duration: 140ms; }
+    }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.default;
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down {
+                root.jump(self.mouse-y);
+            }
+        }
+        moved => {
+            if self.pressed {
+                root.jump(self.mouse-y);
+            }
+        }
+    }
+}
+
+// A track's right-click menu: its actions in groups, chosen by click or by the arrows
+// and Enter; Esc or a click outside closes it.
+component TrackMenu inherits Rectangle {
+    in property <[MenuEntry]> items;
+    callback chose(string);
+    callback dismissed;
+    // The keyboard's item (-1: none yet).
+    private property <int> highlight: -1;
+
+    width: 212px;
+    height: layout.preferred-height;
+    border-radius: 12px;
+    background: Theme.surface;
+    border-width: 1px;
+    border-color: Theme.border;
+    drop-shadow-blur: 24px;
+    drop-shadow-offset-y: 8px;
+    drop-shadow-color: #00000055;
+    accessible-role: list;
+    accessible-label: "Track menu";
+
+    FocusScope {
+        init => { self.focus(); }
+        key-pressed(event) => {
+            if event.text == Key.Escape {
+                root.dismissed();
+            } else if event.text == Key.UpArrow || event.text == Key.DownArrow {
+                let step = event.text == Key.UpArrow ? -1 : 1;
+                root.highlight = root.highlight < 0
+                    ? (step > 0 ? 0 : root.items.length - 1)
+                    : Math.mod(root.highlight + step + root.items.length, root.items.length);
+            } else if (event.text == Key.Return || event.text == Key.Space) && root.highlight >= 0 {
+                root.chose(root.items[root.highlight].action);
+            }
+            // Nothing reaches the window's shortcuts while the menu is open.
+            accept
+        }
+    }
+
+    layout := VerticalLayout {
+        padding: 5px;
+        for item[index] in root.items: VerticalLayout {
+            if item.separated: Rectangle {
+                height: 9px;
+                Rectangle {
+                    x: 8px;
+                    width: parent.width - 16px;
+                    height: 1px;
+                    background: Theme.border;
+                }
+            }
+            Rectangle {
+                height: 32px;
+                border-radius: 8px;
+                background: touch.has-hover || root.highlight == index ? Theme.raised : transparent;
+                accessible-role: button;
+                accessible-label: item.label;
+                accessible-action-default => { root.chose(item.action); }
+                Text {
+                    x: 12px;
+                    width: parent.width - 24px;
+                    height: parent.height;
+                    text: item.label;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: Theme.text;
+                    vertical-alignment: center;
+                    overflow: elide;
+                }
+                touch := TouchArea {
+                    mouse-cursor: MouseCursor.pointer;
+                    clicked => { root.chose(item.action); }
+                }
+            }
+        }
+    }
+}
+
+// A list of tracks with its scroll rail beside it; where allowed, rows are dragged to
+// reorder. The list is one stop for Tab; then the arrows move between its rows, Enter
+// plays one (Shift+Enter queues it) and the menu key or Shift+F10 opens its menu.
+component TrackList inherits FocusScope {
+    in property <[QueueRow]> rows;
+    in property <bool> show-thumbs;
+    in property <bool> can-add;
+    in property <bool> can-remove;
+    in property <bool> can-drag;
+    in property <string> name;
+    callback clicked(int);
+    callback pin(int);
+    callback add(int);
+    callback remove(int);
+    callback moved(int, int);
+    callback want-thumb(string);
+    // A row's menu, asked for at this point of the window, from the keyboard or not.
+    callback menu(int, length, length, bool);
+    // How far down the list is scrolled, and how much further it could go at most.
+    callback scrolled(length, length);
+    private property <length> offset: -list.content-y;
+    changed offset => { root.scrolled(root.offset, list.content-height - list.visible-height); }
+    // When the list's top moves up (the card above it slimming), the rows stay where they
+    // are on screen: the list scrolls by as much, so nothing moves under the pointer.
+    private property <length> top: root.absolute-position.y;
+    private property <length> last-top;
+    init => { root.last-top = root.absolute-position.y; }
+    changed top => {
+        let moved = root.last-top - root.top;
+        root.last-top = root.top;
+        if moved > 0 {
+            list.content-y = min(0px, list.content-y + moved);
+        }
+    }
+    // Bumped to give the list the focus back (after its menu closes).
+    in property <int> focus-request;
+    changed focus-request => { root.focus(); }
+
+    // The row being dragged, and where it would land (-1: none).
+    private property <int> drag-from: -1;
+    private property <int> drag-to: -1;
+    // The keyboard's row.
+    private property <int> cursor;
+    private property <length> row-height: 60px;
+
+    focus-on-click: false;
+    // Reaching the list, the keyboard starts from the rows on screen: the cursor stays
+    // where it was if that row is showing, else moves to the first row fully showing.
+    changed has-focus => {
+        if root.has-focus {
+            let first = ceil(-list.content-y / root.row-height);
+            let last = floor((-list.content-y + list.visible-height) / root.row-height) - 1;
+            if root.cursor < first || root.cursor > last || root.cursor >= root.rows.length {
+                root.cursor = clamp(first, 0, max(0, root.rows.length - 1));
+            }
+        }
+    }
+    accessible-role: AccessibleRole.list;
+    accessible-label: root.name;
+
+    function go(to: int) {
+        root.cursor = clamp(to, 0, max(0, root.rows.length - 1));
+        // Kept in view.
+        let top = root.cursor * root.row-height;
+        if top < -list.content-y {
+            list.content-y = -top;
+        } else if top + root.row-height > -list.content-y + list.visible-height {
+            list.content-y = -(top + root.row-height - list.visible-height);
+        }
+    }
+
+    key-pressed(event) => {
+        if root.rows.length == 0 || event.modifiers.control || event.modifiers.alt {
+            return reject;
+        }
+        if event.text == Key.UpArrow || event.text == Key.DownArrow {
+            root.go(root.cursor + (event.text == Key.UpArrow ? -1 : 1));
+            return accept;
+        }
+        if event.text == Key.PageUp || event.text == Key.PageDown {
+            let page = max(1, floor(list.visible-height / root.row-height) - 1);
+            root.go(root.cursor + (event.text == Key.PageUp ? -page : page));
+            return accept;
+        }
+        if event.text == Key.Home || event.text == Key.End {
+            root.go(event.text == Key.Home ? 0 : root.rows.length - 1);
+            return accept;
+        }
+        if event.text == Key.Return {
+            root.go(root.cursor);
+            if event.modifiers.shift {
+                if root.can-add {
+                    root.add(root.cursor);
+                }
+            } else {
+                root.clicked(root.cursor);
+            }
+            return accept;
+        }
+        if event.text == Key.Delete && root.can-remove {
+            root.go(root.cursor);
+            root.remove(root.cursor);
+            return accept;
+        }
+        if event.text == Key.Menu || (event.modifiers.shift && event.text == Key.F10) {
+            root.go(root.cursor);
+            root.menu(root.cursor, root.absolute-position.x + 48px,
+                root.absolute-position.y + list.content-y + (root.cursor + 1) * root.row-height - 12px, true);
+            return accept;
+        }
+        reject
+    }
+
+    HorizontalLayout {
+        spacing: 4px;
+        list := ListView {
+            vertical-scrollbar-policy: ScrollBarPolicy.always-off;
+            horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+            for row[index] in root.rows: TrackRow {
+                item: row;
+                index: index;
+                show-thumb: root.show-thumbs;
+                can-add: root.can-add;
+                can-remove: root.can-remove;
+                can-drag: root.can-drag;
+                drag-from: root.drag-from;
+                drag-to: root.drag-to;
+                focused: root.has-focus && index == root.cursor;
+                clicked => { root.clicked(index); }
+                menu(x, y) => {
+                    root.cursor = index;
+                    root.menu(index, x, y, false);
+                }
+                pin => { root.pin(index); }
+                add => { root.add(index); }
+                remove => { root.remove(index); }
+                want-thumb(id) => { root.want-thumb(id); }
+                dragging(rows) => {
+                    root.drag-from = index;
+                    root.drag-to = clamp(index + rows, 0, root.rows.length - 1);
+                }
+                dropped(rows) => {
+                    root.drag-from = -1;
+                    if rows != 0 {
+                        root.moved(index, clamp(index + rows, 0, root.rows.length - 1));
+                    }
+                }
+            }
+        }
+        ScrollRail {
+            offset <=> list.content-y;
+            content: list.content-height;
+            visible-height: list.visible-height;
+        }
+    }
+}
+
+// A heading over part of a list: its name, how many, (if it can) a fold arrow, and a line
+// running across the rest of the width.
+component SectionHeader inherits Rectangle {
+    in property <string> text;
+    in property <int> count;
+    in property <bool> open: true;
+    in property <bool> can-close: true;
+    callback toggled;
+
+    height: 36px;
+    vertical-stretch: 0;
+    HorizontalLayout {
+        padding-top: 8px;
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 8px;
+        Rectangle {
+            width: 14px;
+            if root.can-close: Path {
+                y: (parent.height - self.height) / 2;
+                width: 14px;
+                height: 14px;
+                viewbox-width: 24;
+                viewbox-height: 24;
+                commands: root.open ? Icons.chevron-down : Icons.chevron-right;
+                fill: Theme.muted;
+            }
+        }
+        Text {
+            text: root.text;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: Theme.text;
+            vertical-alignment: center;
+        }
+        Text {
+            text: root.count;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: Theme.faint;
+            vertical-alignment: center;
+        }
+        Rectangle {
+            horizontal-stretch: 1;
+            Rectangle {
+                y: (parent.height - self.height) / 2;
+                height: 1px;
+                background: Theme.border;
+            }
+        }
+    }
+    if root.can-close: TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.toggled(); }
+    }
+}
+
+// A rounded button with a frame: filled in the accent for the one action asked for, tinted
+// when it's a toggle that's on, outlined otherwise. With no text, it's a round icon button.
+component Pill inherits Rectangle {
+    in property <string> text;
+    in property <string> icon;
+    in property <bool> primary;
+    in property <bool> active;
+    in property <bool> enabled: true;
+    callback clicked;
+
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-action-default => { root.clicked(); }
+
+    height: 32px;
+    width: root.text == "" ? 32px : content.preferred-width;
+    border-radius: 16px;
+    background: root.primary
+        ? (touch.pressed ? Theme.accent.darker(0.1) : touch.has-hover && root.enabled ? Theme.accent.brighter(0.08) : Theme.accent)
+        : root.active ? Theme.soft
+        : touch.pressed ? Theme.pressed : touch.has-hover && root.enabled ? Theme.hover : transparent;
+    border-width: root.primary || root.active ? 0px : 1px;
+    border-color: Theme.border;
+    animate background { duration: 160ms; }
+    private property <color> ink: !root.enabled ? Theme.faint : root.primary ? Theme.on-accent : root.active ? Theme.accent-text : Theme.text;
+    content := HorizontalLayout {
+        padding-left: root.text == "" ? 0px : 13px;
+        padding-right: root.text == "" ? 0px : 15px;
+        spacing: 6px;
+        alignment: center;
+        if root.icon != "": Path {
+            width: 15px;
+            height: 15px;
+            y: (parent.height - self.height) / 2;
+            viewbox-width: 24;
+            viewbox-height: 24;
+            commands: root.icon;
+            fill: root.ink;
+        }
+        if root.text != "": Text {
+            text: root.text;
+            font-size: 13px;
+            font-weight: 700;
+            color: root.ink;
+            vertical-alignment: center;
+        }
+    }
+    focus := FocusScope {
+        enabled: root.enabled;
+        focus-on-click: false;
+        key-pressed(event) => {
+            if event.text == Key.Return || event.text == Key.Space {
+                root.clicked();
+                return accept;
+            }
+            reject
+        }
+    }
+    if focus.has-focus: FocusRing {
+        width: root.width + 6px;
+        height: root.height + 6px;
+        radius: root.border-radius;
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// A pinned playlist as a small cover with its name under it, for the shelf.
+component PlaylistTile inherits Rectangle {
+    in property <LibraryRow> item;
+    in property <bool> show-thumb: true;
+    callback open;
+    callback play;
+    callback menu(length, length);
+    callback want-thumb(string);
+
+    init => { root.ask-thumb(); }
+    changed item => { root.ask-thumb(); }
+    function ask-thumb() {
+        if root.show-thumb && root.item.thumb-id != "" && root.item.thumb.width == 0 {
+            root.want-thumb(root.item.thumb-id);
+        }
+    }
+
+    width: 112px;
+    height: 100px;
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.open(); }
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.right {
+                root.menu(root.absolute-position.x + self.mouse-x, root.absolute-position.y + self.mouse-y);
+            }
+        }
+    }
+    Rectangle {
+        y: 0px;
+        height: 63px;
+        border-radius: 10px;
+        clip: true;
+        background: root.item.liked ? Theme.soft : Theme.raised;
+        if root.item.liked: Path {
+            width: 24px;
+            height: 24px;
+            viewbox-width: 24;
+            viewbox-height: 24;
+            commands: Icons.heart;
+            fill: Theme.accent-text;
+        }
+        if !root.item.liked && root.show-thumb: Image {
+            width: 100%;
+            height: 100%;
+            source: root.item.thumb;
+            image-fit: ImageFit.cover;
+        }
+        // Pointed at: a little darker, with a play button in the corner.
+        Rectangle {
+            background: touch.has-hover || play-touch.has-hover ? #00000026 : transparent;
+            animate background { duration: 140ms; }
+        }
+        Rectangle {
+            x: parent.width - self.width - 6px;
+            y: parent.height - self.height - 6px;
+            width: 28px;
+            height: 28px;
+            border-radius: 14px;
+            background: play-touch.has-hover ? Theme.accent.brighter(0.08) : Theme.accent;
+            opacity: touch.has-hover || play-touch.has-hover ? 1 : 0;
+            animate opacity { duration: 140ms; }
+            Path {
+                width: 14px;
+                height: 14px;
+                viewbox-width: 24;
+                viewbox-height: 24;
+                commands: Icons.play;
+                fill: Theme.on-accent;
+            }
+            play-touch := TouchArea {
+                mouse-cursor: MouseCursor.pointer;
+                clicked => { root.play(); }
+            }
+        }
+    }
+    Text {
+        y: 69px;
+        width: parent.width;
+        text: root.item.title;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: Theme.text;
+        overflow: elide;
+    }
+    Text {
+        y: 86px;
+        width: parent.width;
+        text: root.item.meta;
+        font-size: 11px;
+        font-weight: 500;
+        color: Theme.muted;
+        overflow: elide;
+    }
+}
+
+// Pinned playlists in one row that slides sideways: with the arrows, or the mouse wheel.
+component PlaylistShelf inherits Rectangle {
+    in property <[LibraryRow]> rows;
+    in property <bool> show-thumbs;
+    callback open(string);
+    callback play(string);
+    callback menu(int, length, length);
+    callback want-thumb(string);
+
+    private property <length> step: 122px;
+    private property <length> room: max(0px, root.rows.length * root.step - 10px + 20px - root.width);
+    // How far the row is slid to the left.
+    in-out property <length> offset;
+    changed room => { root.offset = clamp(root.offset, 0px, root.room); }
+    function slide(by: length) { root.offset = clamp(root.offset + by, 0px, root.room); }
+
+    height: 108px;
+    vertical-stretch: 0;
+    clip: true;
+    // The tiles let the wheel through, so it slides the row wherever the pointer is.
+    TouchArea {
+        scroll-event(event) => {
+            if root.room <= 0px {
+                return reject;
+            }
+            root.slide(-(event.delta-y + event.delta-x));
+            accept
+        }
+        Rectangle {
+            x: -root.offset;
+            animate x { duration: 180ms; easing: ease-out; }
+            for row[index] in root.rows: PlaylistTile {
+                x: 10px + index * root.step;
+                y: 4px;
+                item: row;
+                show-thumb: root.show-thumbs;
+                open => { root.open(row.id); }
+                play => { root.play(row.id); }
+                menu(x, y) => { root.menu(index, x, y); }
+                want-thumb(id) => { root.want-thumb(id); }
+            }
+        }
+    }
+    for side in [0, 1]: Rectangle {
+        private property <bool> shown: side == 0 ? root.offset > 0.5px : root.offset < root.room - 0.5px;
+        x: side == 0 ? 4px : root.width - self.width - 4px;
+        y: 4px + 63px / 2 - self.height / 2;
+        width: 30px;
+        height: 30px;
+        border-radius: 15px;
+        background: arrow-touch.has-hover ? Theme.hover : Theme.surface;
+        border-width: 1px;
+        border-color: Theme.border;
+        drop-shadow-blur: 4px;
+        drop-shadow-color: #00000022;
+        opacity: self.shown ? 1 : 0;
+        animate opacity { duration: 140ms; }
+        Path {
+            width: 18px;
+            height: 18px;
+            viewbox-width: 24;
+            viewbox-height: 24;
+            commands: side == 0 ? Icons.back : Icons.chevron-right;
+            fill: Theme.text;
+        }
+        arrow-touch := TouchArea {
+            enabled: parent.shown;
+            mouse-cursor: MouseCursor.pointer;
+            clicked => { root.slide((side == 0 ? -1 : 1) * max(root.step, root.width - 80px)); }
+        }
+    }
+}
+
+// A few words that open a page: in the accent, brighter when pointed at.
+component Link inherits Text {
+    callback clicked;
+    accessible-role: button;
+    accessible-label: self.text;
+    accessible-action-default => { root.clicked(); }
+    font-size: 12px;
+    font-weight: 600;
+    color: touch.has-hover ? Theme.accent : Theme.accent-text;
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// What an empty list shows instead: a feather, what is missing and how to fill it.
+component EmptyState inherits Rectangle {
+    in property <string> title;
+    in property <string> hint;
+
+    // In a short window, the feather goes first, then the hint, so the words never spill
+    // over what's below.
+    private property <bool> roomy: root.height >= 190px;
+    private property <bool> room-for-hint: root.height >= 96px;
+
+    clip: true;
+    VerticalLayout {
+        alignment: center;
+        spacing: 8px;
+        padding-left: 32px;
+        padding-right: 32px;
+        padding-bottom: root.roomy ? 24px : 0px;
+        if root.roomy: HorizontalLayout {
+            alignment: center;
+            Path {
+                width: 52px;
+                height: 52px;
+                viewbox-width: 24;
+                viewbox-height: 24;
+                commands: Icons.feather;
+                fill: transparent;
+                stroke: Theme.faint;
+                stroke-width: 1.4px;
+                stroke-line-cap: round;
+            }
+        }
+        if root.roomy: Rectangle { height: 4px; }
+        Text {
+            text: root.title;
+            font-size: 15px;
+            font-weight: 700;
+            color: Theme.text;
+            horizontal-alignment: center;
+        }
+        if root.room-for-hint: Text {
+            text: root.hint;
+            font-size: 13px;
+            font-weight: 500;
+            color: Theme.muted;
+            horizontal-alignment: center;
+            wrap: word-wrap;
+        }
+        // A button under the words, where there's one (signing in).
+        HorizontalLayout {
+            alignment: center;
+            @children
+        }
+    }
+}
+
+// A row of choices, one selected: Auto / Dark / Light.
+component Segmented inherits Rectangle {
+    in property <[string]> options;
+    in-out property <int> selected;
+    callback changed-to(int);
+
+    height: 36px;
+    border-radius: 11px;
+    background: Theme.ground;
+    HorizontalLayout {
+        padding: 3px;
+        spacing: 3px;
+        for option[index] in root.options: Rectangle {
+            horizontal-stretch: 1;
+            border-radius: 8px;
+            background: index == root.selected ? Theme.raised : option-touch.has-hover ? Theme.hover : transparent;
+            animate background { duration: 160ms; }
+            Text {
+                text: option;
+                font-size: 13px;
+                font-weight: index == root.selected ? 700 : 600;
+                color: index == root.selected ? Theme.text : Theme.muted;
+            }
+            option-touch := TouchArea {
+                mouse-cursor: MouseCursor.pointer;
+                clicked => {
+                    root.selected = index;
+                    root.changed-to(index);
+                }
+            }
+        }
+    }
+}
+
+// An on/off switch.
+component Switch inherits Rectangle {
+    in-out property <bool> checked;
+    callback toggled(bool);
+
+    width: 40px;
+    height: 24px;
+    border-radius: 12px;
+    background: root.checked ? Theme.accent : Theme.track;
+    animate background { duration: 160ms; }
+    Rectangle {
+        x: root.checked ? parent.width - self.width - 3px : 3px;
+        y: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 9px;
+        background: #ffffff;
+        animate x { duration: 160ms; easing: ease-out; }
+    }
+    focus := FocusScope {
+        focus-on-click: false;
+        key-pressed(event) => {
+            if event.text == Key.Return || event.text == Key.Space {
+                root.checked = !root.checked;
+                root.toggled(root.checked);
+                return accept;
+            }
+            reject
+        }
+    }
+    if focus.has-focus: FocusRing {
+        width: root.width + 6px;
+        height: root.height + 6px;
+        radius: root.border-radius;
+    }
+    TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => {
+            root.checked = !root.checked;
+            root.toggled(root.checked);
+        }
+    }
+}
+
+component Tab inherits Rectangle {
+    in property <string> text;
+    in property <string> count;
+    in property <bool> selected;
+    callback clicked;
+
+    height: 30px;
+    border-radius: 9px;
+    background: root.selected ? Theme.raised : touch.has-hover ? Theme.hover : transparent;
+    animate background { duration: 160ms; }
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 14px;
+        spacing: 6px;
+        Text {
+            text: root.text;
+            font-size: 13px;
+            font-weight: root.selected ? 700 : 600;
+            color: root.selected ? Theme.text : Theme.muted;
+            vertical-alignment: center;
+        }
+        if root.count != "": Text {
+            text: root.count;
+            font-size: 13px;
+            font-weight: 700;
+            color: root.selected ? Theme.accent-text : Theme.faint;
+            vertical-alignment: center;
+        }
+    }
+    focus := FocusScope {
+        focus-on-click: false;
+        key-pressed(event) => {
+            if event.text == Key.Return || event.text == Key.Space {
+                root.clicked();
+                return accept;
+            }
+            reject
+        }
+    }
+    if focus.has-focus: FocusRing {
+        width: root.width + 6px;
+        height: root.height + 6px;
+        radius: root.border-radius;
+    }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// A caption button of the title bar: minimise, maximise or restore, close.
+component CaptionButton inherits Rectangle {
+    in property <string> glyph;
+    // Close turns red under the pointer, as everywhere on Windows.
+    in property <bool> danger;
+    in property <string> label;
+    callback clicked;
+
+    width: 46px;
+    background: touch.pressed ? (root.danger ? #a8232f : Theme.pressed) : touch.has-hover ? (root.danger ? #c42b1c : Theme.hover) : transparent;
+    animate background { duration: 120ms; }
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => { root.clicked(); }
+    Path {
+        width: 10px;
+        height: 10px;
+        viewbox-width: 10;
+        viewbox-height: 10;
+        commands: root.glyph;
+        fill: transparent;
+        stroke: root.danger && touch.has-hover ? #ffffff : Theme.muted;
+        stroke-width: 1px;
+    }
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+// The window's own title bar, in the app's colours: the feather, the name, and the
+// caption buttons. Dragging it moves the window (the system does the move, so snapping
+// to the screen's edges works); a double-click maximises or restores it.
+component TitleBar inherits Rectangle {
+    in property <bool> maximized;
+    callback minimize();
+    callback toggle-maximize();
+    callback close();
+
+    height: 36px;
+    background: Theme.ground;
+    WindowMoveArea {
+        width: parent.width - 138px;
+        x: 0;
+        TouchArea {
+            double-clicked => { root.toggle-maximize(); }
+        }
+        HorizontalLayout {
+            padding-left: 14px;
+            spacing: 8px;
+            alignment: start;
+            Image {
+                y: (parent.height - self.height) / 2;
+                width: 16px;
+                height: 16px;
+                source: @image-url("icon.png");
+            }
+            Text {
+                text: "Featherplay";
+                font-size: 12px;
+                font-weight: 600;
+                color: Theme.muted;
+                vertical-alignment: center;
+            }
+        }
+    }
+    HorizontalLayout {
+        x: parent.width - self.width;
+        width: 138px;
+        CaptionButton {
+            label: "Minimise";
+            glyph: "M0 5.5 L10 5.5";
+            clicked => { root.minimize(); }
+        }
+        CaptionButton {
+            label: root.maximized ? "Restore" : "Maximise";
+            glyph: root.maximized ? "M2.5 2.5 L2.5 0.5 L9.5 0.5 L9.5 7.5 L7.5 7.5 M0.5 2.5 L7.5 2.5 L7.5 9.5 L0.5 9.5 Z" : "M0.5 0.5 L9.5 0.5 L9.5 9.5 L0.5 9.5 Z";
+            clicked => { root.toggle-maximize(); }
+        }
+        CaptionButton {
+            label: "Close";
+            danger: true;
+            glyph: "M0.5 0.5 L9.5 9.5 M9.5 0.5 L0.5 9.5";
+            clicked => { root.close(); }
+        }
+    }
+}
+
+export component AppWindow inherits Window {
+    title: "Featherplay";
+    // The app draws its own title bar; the edges still resize the window.
+    no-frame: true;
+    resize-border-width: root.maximized ? 0px : 6px;
+    // The size the first run opens at; after that, the window keeps the size it was given.
+    preferred-width: 485px;
+    preferred-height: 775px;
+    min-width: 380px;
+    min-height: 596px;
+    background: Theme.ground;
+    // The feather, drawn by src/icon.rs and saved by `cargo run --example icon_png -- ui/icon.png`.
+    icon: @image-url("icon.png");
+    default-font-family: "Plus Jakarta Sans";
+
+    in property <string> track-title: "Nothing playing";
+    in property <string> track-channel;
+    in property <string> up-next;
+    in property <string> status;
+    in property <bool> loading;
+    in property <bool> has-track;
+    in property <bool> playing;
+    in property <float> duration;
+    // Seconds into the track.
+    in-out property <float> position;
+    in-out property <float> volume: 0.8;
+    in-out property <bool> muted;
+    out property <bool> seeking: wave.seeking;
+    // How wide the waveform is, so the playhead is updated as often as it visibly moves.
+    out property <length> wave-width: wave.width;
+    // 0 off, 1 all, 2 one.
+    in property <int> repeat-mode;
+    in property <bool> shuffle;
+    in property <string> ytdlp-version: "…";
+    in property <[float]> levels;
+    in property <[QueueRow]> queue;
+    in property <[QueueRow]> pins;
+    in property <image> cover;
+    // The cover being replaced, under the new one while it fades in.
+    in property <image> previous-cover;
+    in-out property <bool> cover-changed;
+    // The cover's colour, which tints the card around it.
+    in property <bool> tinted;
+    in property <color> cover-colour;
+    in property <[QueueRow]> history;
+    in property <[QueueRow]> results;
+    in property <bool> searching;
+    // Which list shows: 0 queue, 1 history, 2 pinned, 3 search results.
+    in-out property <int> tab;
+    // 0 follows the system, 1 dark, 2 light.
+    in-out property <int> theme-mode;
+    in-out property <bool> show-thumbs: true;
+    // The Library tab: the account's playlists (the liked videos first), and the one opened.
+    in property <[LibraryRow]> library;
+    // The opened list's id; empty for none.
+    in-out property <string> library-open;
+    in property <string> library-title;
+    in property <string> library-meta;
+    in property <[QueueRow]> library-tracks;
+    // "Updated 3 min ago".
+    in property <string> library-updated;
+    // The opened playlist's cover.
+    in property <image> library-open-cover;
+    in property <bool> library-refreshing;
+    callback library-shown();
+    callback library-changed();
+    callback library-refresh();
+    callback library-open-list(string);
+    // Play (or shuffle) a whole list next, or add it to the end of the queue.
+    callback library-play(string, bool);
+    callback library-add(string);
+    // The end of the opened list's loaded tracks came into view.
+    callback library-more();
+    // Near the end of the search results: read more.
+    callback results-more();
+    callback library-play-track(int);
+    callback library-add-track(int);
+    callback library-pin-track(int);
+    // Whole playlists pinned (shown first in Pinned), and pinning one.
+    in property <[LibraryRow]> pinned-lists;
+    in-out property <bool> pinned-lists-open: true;
+    in property <bool> library-open-pinned;
+    callback pin-list(string);
+    callback open-pinned-list(string);
+    // The YouTube account: 0 sign-in not possible here, 1 signed out, 2 waiting for the
+    // browser, 3 signed in, 4 signed in to an account without a YouTube channel.
+    in property <int> account-state;
+    in property <string> account-name;
+    in property <image> account-picture;
+    in property <string> google-label;
+    callback sign-in();
+    callback cancel-sign-in();
+    callback copy-sign-in-link();
+    callback sign-out();
+    // 0 Featherplay's privacy policy, 1 YouTube's Terms of Service, 2 Google's Privacy Policy.
+    callback open-policy(int);
+    // The account changed: the app reads it into the window again.
+    callback account-changed();
+    // The now-playing card is a slim header while a list is scrolled down.
+    in-out property <bool> slim;
+    changed tab => {
+        root.slim = false;
+        if root.tab == 4 {
+            root.library-shown();
+        }
+    }
+    // Slim once a list is scrolled past its first row, with room to scroll on; full again
+    // only back at the top, so small scrolls near the line don't flip it back and forth.
+    function list-scrolled(offset: length, room: length) {
+        // (Past the first row even after the list makes up for the card's 64 px.)
+        if !root.slim && offset > 124px && room > 214px {
+            root.slim = true;
+        } else if root.slim && offset < 4px {
+            root.slim = false;
+        }
+    }
+    // Under the waveform, the time left instead of the track's length.
+    in-out property <bool> show-remaining;
+    function toggle-remaining() {
+        root.show-remaining = !root.show-remaining;
+        root.settings-changed();
+    }
+    in-out property <bool> settings-open;
+    in property <string> app-version;
+    // The window's own title bar: closing goes to the tray, as the system's button does.
+    callback close-window();
+    // Updating Featherplay: 0 not checked, 1 checking, 2 up to date, 3 available,
+    // 4 downloading, 5 failed, 6 restarting.
+    in property <int> app-update-state;
+    in property <string> app-update-version;
+    in property <float> app-update-progress;
+    in property <string> app-update-error;
+    callback check-app-update();
+    callback install-app-update();
+    in-out property <bool> about-open;
+    callback open-website();
+    // Closing the settings closes the About sheet over them too.
+    changed settings-open => {
+        if !root.settings-open { root.about-open = false; }
+    }
+    private property <float> about-shown: root.about-open ? 1 : 0;
+    animate about-shown { duration: 260ms; easing: ease-out; }
+    private property <float> sheet-shown: root.settings-open ? 1 : 0;
+    animate sheet-shown { duration: 260ms; easing: ease-out; }
+
+    // The widgets' palette is told the theme (or to follow the system), and the window's
+    // own colours follow whatever the palette then is.
+    changed theme-mode => { root.apply-theme(); }
+
+    // Changing theme: the window as it looked is laid over it (`theme-snapshot`) and
+    // wiped away diagonally, uncovering the new colours: towards the top left when going
+    // dark, towards the bottom right when going light.
+    callback pick-theme(int);
+    in property <image> theme-snapshot;
+    in property <bool> wiping;
+    // How far the wipe has gone, from the clock: the frames are drawn only while it runs.
+    private property <duration> wipe-start;
+    changed wiping => {
+        if root.wiping { root.wipe-start = animation-tick(); }
+    }
+    private property <float> wipe-linear: root.wiping ? clamp((animation-tick() - root.wipe-start) / 650ms, 0, 1) : 0;
+    // Eased in and out.
+    private property <float> wipe: root.wipe-linear * root.wipe-linear * (3 - 2 * root.wipe-linear);
+    init => { root.apply-theme(); }
+    function apply-theme() {
+        Palette.color-scheme = root.theme-mode == 1 ? ColorScheme.dark : root.theme-mode == 2 ? ColorScheme.light : ColorScheme.unknown;
+    }
+    private property <color> palette-ground: Palette.background;
+    private property <bool> palette-light: root.palette-ground.to-hsv().value > 0.5;
+    changed palette-light => { Theme.light = root.palette-light; }
+
+    callback open-link(string, bool);
+    pure callback is-link(string) -> bool;
+    callback toggle-pause();
+    callback previous();
+    callback next();
+    callback seek(float);
+    callback volume-changed(float);
+    // Volume, repeat or shuffle changed: time to save them.
+    callback settings-changed();
+    callback cycle-repeat();
+    callback toggle-shuffle();
+    callback play-row(int);
+    // A track's menu: the list it's in (0-3 the tabs, 4 the now-playing card), its row
+    // and where it was asked for; the app fills in `menu-items` and opens it.
+    callback open-menu(int, int, length, length);
+    callback menu-chose(string);
+    in property <[MenuEntry]> menu-items;
+    in-out property <bool> menu-open;
+    in property <length> menu-x;
+    in property <length> menu-y;
+    // Opened from the keyboard: the list gets the focus back when it closes.
+    private property <bool> menu-keyboard;
+    private property <int> list-focus;
+    function close-menu() {
+        root.menu-open = false;
+        if root.menu-keyboard {
+            root.list-focus += 1;
+        } else {
+            keys.focus();
+        }
+    }
+    function list-menu(list: int, row: int, x: length, y: length, keyboard: bool) {
+        root.menu-keyboard = keyboard;
+        root.open-menu(list, row, x, y);
+    }
+    // Puts text on the clipboard.
+    public function copy-text(text: string) {
+        clipboard.text = text;
+        clipboard.select-all();
+        clipboard.copy();
+        clipboard.text = "";
+    }
+    callback remove-row(int);
+    // A row of the queue, or of the pins, dragged from one place to another.
+    callback move-row(int, int);
+    callback move-pin(int, int);
+    callback clear-queue();
+    callback pin-row(int);
+    callback play-history(int);
+    callback add-history(int);
+    callback pin-history(int);
+    callback remove-history(int);
+    callback clear-history();
+    callback play-pin(int);
+    callback add-pin(int);
+    callback unpin(int);
+    callback pin-result(int);
+    callback play-all-pins();
+    callback want-thumb(string);
+    callback update-ytdlp();
+    callback play-result(int);
+    callback add-result(int);
+    // Rereads the queue and the current track from the app.
+    callback refresh();
+    callback seek-by(float);
+
+    function nudge-volume(by: float) {
+        root.volume = clamp(root.volume + by, 0, 1);
+        root.muted = false;
+        root.volume-changed(root.volume);
+        root.settings-changed();
+    }
+
+    private property <bool> can-play: root.has-track || root.queue.length > 0;
+
+    // Set when a new track comes up: the cover and title vanish, and fade in as it clears.
+    in-out property <bool> fresh;
+    states [
+        new-track when root.fresh: {
+            card-text.opacity: 0;
+            card-lines.y: 8px;
+            out {
+                animate card-text.opacity { duration: 420ms; easing: ease-out; }
+                animate card-lines.y { duration: 480ms; easing: cubic-bezier(0.2, 0.8, 0.2, 1); }
+            }
+        }
+    ]
+
+
+    // The last message, kept on screen while it fades out.
+    private property <string> shown-status;
+    changed status => {
+        if root.status != "" {
+            root.shown-status = root.status;
+        }
+    }
+
+    // Keyboard shortcuts. Keys go to whatever has focus first (the search box) and come
+    // here when it doesn't use them.
+    keys := FocusScope {
+        focus-on-tab-navigation: false;
+        init => {
+            self.focus();
+            Theme.light = root.palette-light;
+        }
+
+        Timer {
+            interval: 40ms;
+            running: root.fresh;
+            triggered => { root.fresh = false; }
+        }
+        Timer {
+            interval: 40ms;
+            running: root.cover-changed;
+            triggered => { root.cover-changed = false; }
+        }
+        key-pressed(event) => {
+            if event.modifiers.control && (event.text == "l" || event.text == "L" || event.text == "f" || event.text == "F") {
+                search.focus-input();
+                return accept;
+            }
+            if event.modifiers.control && (event.text == Key.LeftArrow || event.text == Key.RightArrow) {
+                if event.text == Key.LeftArrow {
+                    root.previous();
+                } else {
+                    root.next();
+                }
+                return accept;
+            }
+            if event.modifiers.control || event.modifiers.alt || event.modifiers.meta {
+                return reject;
+            }
+            if event.text == Key.Escape {
+                // One sheet at a time: About first, then the settings under it; then an
+                // opened playlist goes back to the Library.
+                if root.about-open {
+                    root.about-open = false;
+                } else if root.settings-open {
+                    root.settings-open = false;
+                } else if root.tab == 4 && root.library-open != "" {
+                    root.library-open = "";
+                }
+                self.focus();
+                return accept;
+            }
+            if event.text == Key.Space {
+                root.toggle-pause();
+                return accept;
+            }
+            if event.text == Key.LeftArrow || event.text == Key.RightArrow {
+                if root.has-track && !root.loading {
+                    root.seek-by(event.text == Key.LeftArrow ? -5 : 5);
+                }
+                return accept;
+            }
+            if event.text == Key.UpArrow || event.text == Key.DownArrow {
+                root.nudge-volume(event.text == Key.UpArrow ? 0.05 : -0.05);
+                return accept;
+            }
+            if event.text == "m" || event.text == "M" {
+                root.muted = !root.muted;
+                root.volume-changed(root.volume);
+                return accept;
+            }
+            reject
+        }
+
+        TitleBar {
+            x: 0;
+            y: 0;
+            width: parent.width;
+            maximized: root.maximized;
+            minimize => { root.minimized = true; }
+            toggle-maximize => { root.maximized = !root.maximized; }
+            close => { root.close-window(); }
+        }
+
+        VerticalLayout {
+            y: 36px;
+            height: parent.height - 36px;
+            padding: 20px;
+            padding-top: 6px;
+            padding-bottom: 14px;
+            spacing: 16px;
+
+            // The search box, and under it a slot always kept for the hint, so the hint
+            // never covers anything and nothing moves when it appears.
+            VerticalLayout {
+                spacing: 6px;
+                vertical-stretch: 0;
+                search := SearchBox {
+                    link: root.is-link(self.text);
+                    submit(text, play-now) => {
+                        root.open-link(text, play-now);
+                        keys.focus();
+                    }
+                }
+                // Only for a pasted link: Enter to search words needs no explaining.
+                hint := Rectangle {
+                    height: 22px;
+                    opacity: search.link ? 1 : 0;
+                    animate opacity { duration: 140ms; }
+                    accessible-role: text;
+                    accessible-label: "Enter: play now. Shift+Enter or +: add to the end of the queue.";
+                    clip: true;
+                    HorizontalLayout {
+                        padding-left: 14px;
+                        spacing: 6px;
+                        alignment: start;
+                        Keycap { y: (parent.height - self.height) / 2; text: "Enter"; }
+                        HintText { text: "play now"; }
+                        HintText { text: "·"; color: Theme.faint; }
+                        Keycap { y: (parent.height - self.height) / 2; text: "Shift+Enter"; }
+                        HintText { text: "or"; }
+                        Keycap { y: (parent.height - self.height) / 2; text: "+"; }
+                        HintText { text: "add to queue"; }
+                    }
+                }
+            }
+
+            // Now playing: cover, title, channel and what comes next, on a card faintly
+            // tinted with the cover's colour (darkened first in the dark theme, so the
+            // card stays calm whatever the picture).
+            // While a list is scrolled down, the card shrinks to a slim header, so the list
+            // gets the room; back at the top (or on a click) it's full again.
+            now-card := Rectangle {
+                height: root.slim ? 56px : 120px;
+                animate height { duration: 260ms; easing: cubic-bezier(0.25, 0.1, 0.25, 1); }
+                vertical-stretch: 0;
+                border-radius: root.slim ? 14px : 18px;
+                animate border-radius { duration: 260ms; easing: cubic-bezier(0.25, 0.1, 0.25, 1); }
+                clip: true;
+                // 1 for the full card, 0 for the slim header, and in between while it changes:
+                // everything inside follows the card's height.
+                private property <float> open: clamp((self.height - 56px) / 64px, 0, 1);
+                background: !root.tinted ? Theme.card
+                    : Theme.light ? Theme.card.mix(root.cover-colour, 0.86)
+                    : Theme.card.mix(root.cover-colour.darker(0.6), 0.62);
+                animate background { duration: 400ms; easing: ease-in-out; }
+                border-width: 1px;
+                border-color: Theme.border;
+                TouchArea {
+                    mouse-cursor: root.slim ? MouseCursor.pointer : MouseCursor.default;
+                    clicked => { root.slim = false; }
+                    pointer-event(event) => {
+                        if event.kind == PointerEventKind.down && event.button == PointerEventButton.right && root.has-track {
+                            root.list-menu(4, 0, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y, false);
+                        }
+                    }
+                }
+                // The full card and the slim header are two fixed layouts, the one fading out
+                // in the first half of the change and the other in, in the second, while the
+                // card's height changes: nothing inside is resized
+                // or reflowed, so the change stays smooth. Each is centred, the card clipping it.
+                Rectangle {
+                    visible: now-card.open > 0;
+                    y: (now-card.height - self.height) / 2;
+                    height: 120px;
+                    opacity: clamp((now-card.open - 0.5) / 0.5, 0, 1);
+                    HorizontalLayout {
+                        padding: 12px;
+                        spacing: 16px;
+                        Rectangle {
+                            width: 168px;
+                            border-radius: 12px;
+                            clip: true;
+                            background: Theme.raised;
+                            // Nothing to show yet: a quiet feather in its place.
+                            if root.cover.width == 0: Path {
+                                width: 34px;
+                                height: 34px;
+                                viewbox-width: 24;
+                                viewbox-height: 24;
+                                commands: Icons.feather;
+                                fill: transparent;
+                                stroke: Theme.faint;
+                                stroke-width: 1.4px;
+                                stroke-line-cap: round;
+                            }
+                            // The cover being replaced fades out as the new one (or nothing) fades in.
+                            old-cover := Image {
+                                width: 100%;
+                                height: 100%;
+                                source: root.previous-cover;
+                                image-fit: ImageFit.cover;
+                                opacity: root.cover-changed ? 1 : 0;
+                                animate opacity { duration: root.cover-changed ? 0ms : 520ms; easing: ease-in-out; }
+                            }
+                            // A new cover fades in over the old one.
+                            cover-art := Image {
+                                width: 100%;
+                                height: 100%;
+                                opacity: root.cover-changed ? 0 : 1;
+                                animate opacity { duration: root.cover-changed ? 0ms : 520ms; easing: ease-in-out; }
+                                source: root.cover;
+                                image-fit: ImageFit.cover;
+                            }
+                        }
+                        card-text := Rectangle {
+                            horizontal-stretch: 1;
+                        card-lines := VerticalLayout {
+                            height: parent.height;
+                            alignment: center;
+                            spacing: 5px;
+                            Text {
+                                text: root.track-title;
+                                font-size: 16px;
+                                font-weight: 700;
+                                color: Theme.text;
+                                wrap: word-wrap;
+                                overflow: elide;
+                                // Two lines at most; longer titles end in an ellipsis.
+                                height: min(self.preferred-height, 44px);
+                            }
+                            if root.track-channel != "": Text {
+                                text: root.track-channel;
+                                font-size: 13px;
+                                font-weight: 500;
+                                color: Theme.muted;
+                                overflow: elide;
+                            }
+                            if root.loading || root.up-next != "": Text {
+                                text: root.loading ? "Buffering…" : "Up next · " + root.up-next;
+                                font-size: 12px;
+                                font-weight: root.loading ? 600 : 500;
+                                color: root.loading ? Theme.accent-text : Theme.faint;
+                                overflow: elide;
+                            }
+                        }
+                        }
+                    }
+                }
+                if now-card.open < 1: Rectangle {
+                    y: (now-card.height - self.height) / 2;
+                    height: 56px;
+                    opacity: clamp((0.5 - now-card.open) / 0.5, 0, 1);
+                    HorizontalLayout {
+                        padding: 8px;
+                        spacing: 12px;
+                        Rectangle {
+                            width: 71px;
+                            border-radius: 8px;
+                            clip: true;
+                            background: Theme.raised;
+                            if root.cover.width == 0: Path {
+                                width: 20px;
+                                height: 20px;
+                                viewbox-width: 24;
+                                viewbox-height: 24;
+                                commands: Icons.feather;
+                                fill: transparent;
+                                stroke: Theme.faint;
+                                stroke-width: 1.4px;
+                                stroke-line-cap: round;
+                            }
+                            Image {
+                                width: 100%;
+                                height: 100%;
+                                source: root.cover;
+                                image-fit: ImageFit.cover;
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            spacing: 3px;
+                            horizontal-stretch: 1;
+                            Text {
+                                text: root.track-title;
+                                font-size: 15px;
+                                font-weight: 700;
+                                color: Theme.text;
+                                overflow: elide;
+                            }
+                            if root.track-channel != "": Text {
+                                text: root.track-channel;
+                                font-size: 13px;
+                                font-weight: 500;
+                                color: Theme.muted;
+                                overflow: elide;
+                            }
+                        }
+                    }
+                }
+            }
+            VerticalLayout {
+                spacing: 2px;
+                vertical-stretch: 0;
+                wave := Waveform {
+                    levels: root.levels;
+                    duration: root.duration;
+                    position: root.position;
+                    loading: root.loading;
+                    enabled: root.has-track && !root.loading;
+                    seek(seconds) => {
+                        root.seek(seconds);
+                        keys.focus();
+                    }
+                }
+                HorizontalLayout {
+                    Text {
+                        text: Format.clock(root.position);
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: Theme.muted;
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    // The track's length, or the time left: click (or Enter) to switch.
+                    Rectangle {
+                        width: total-time.preferred-width;
+                        total-time := Text {
+                            text: root.has-track && root.show-remaining && root.duration > 0
+                                ? "−" + Format.clock(ceil(max(0, root.duration - root.position)))
+                                : Format.clock(root.duration);
+                            font-size: 12px;
+                            font-weight: 600;
+                            color: time-touch.has-hover ? Theme.text : Theme.muted;
+                        }
+                        accessible-role: button;
+                        accessible-label: root.show-remaining ? "Time left; show the length instead" : "Track length; show the time left instead";
+                        accessible-value: total-time.text;
+                        accessible-action-default => { root.toggle-remaining(); }
+                        time-focus := FocusScope {
+                            focus-on-click: false;
+                            key-pressed(event) => {
+                                if event.text == Key.Return || event.text == Key.Space {
+                                    root.toggle-remaining();
+                                    return accept;
+                                }
+                                reject
+                            }
+                        }
+                        if time-focus.has-focus: FocusRing {
+                            x: -5px;
+                            y: -2px;
+                            width: parent.width + 10px;
+                            height: parent.height + 4px;
+                            radius: 4px;
+                        }
+                        // Larger than the text, which alone is a small target; nothing moves for it.
+                        time-touch := TouchArea {
+                            x: -14px;
+                            y: -6px;
+                            width: parent.width + 20px;
+                            height: parent.height + 12px;
+                            mouse-cursor: MouseCursor.pointer;
+                            clicked => { root.toggle-remaining(); }
+                        }
+                    }
+                }
+            }
+
+            // Transport: shuffle and repeat on the left, volume on the right.
+            // The side groups give way first on a narrow window, so the row always fits.
+            HorizontalLayout {
+                height: 64px;
+                vertical-stretch: 0;
+                HorizontalLayout {
+                    min-width: 84px;
+                    preferred-width: 112px;
+                    spacing: 4px;
+                    alignment: start;
+                    IconButton {
+                        y: (parent.height - self.height) / 2;
+                        icon: Icons.shuffle;
+                        icon-size: 18px;
+                        active: root.shuffle;
+                        subtle: true;
+                        clicked => { root.toggle-shuffle(); }
+                    }
+                    IconButton {
+                        y: (parent.height - self.height) / 2;
+                        icon: Icons.repeat;
+                        icon-size: 18px;
+                        active: root.repeat-mode != 0;
+                        subtle: true;
+                        clicked => { root.cycle-repeat(); }
+                        if root.repeat-mode == 2: Text {
+                            x: parent.width - 13px;
+                            y: 5px;
+                            text: "1";
+                            font-size: 10px;
+                            font-weight: 800;
+                            color: Theme.accent-text;
+                        }
+                    }
+                }
+                Rectangle { horizontal-stretch: 1; }
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: center;
+                    IconButton {
+                        width: 46px;
+                        height: 46px;
+                        y: (parent.height - self.height) / 2;
+                        icon: Icons.previous;
+                        icon-size: 22px;
+                        enabled: root.queue.length > 0;
+                        clicked => { root.previous(); }
+                    }
+                    Rectangle {
+                        width: 62px;
+                        height: 62px;
+                        border-radius: 31px;
+                        background: !root.can-play ? Theme.raised : play-touch.has-hover ? Theme.accent.brighter(0.08) : Theme.accent;
+                        animate background { duration: 160ms; }
+                        if !root.loading: Path {
+                            width: 26px;
+                            height: 26px;
+                            viewbox-width: 24;
+                            viewbox-height: 24;
+                            commands: root.playing ? Icons.pause : Icons.play;
+                            fill: root.can-play ? Theme.on-accent : Theme.faint;
+                        }
+                        // Buffering: three dots rise and fall one after another.
+                        if root.loading: HorizontalLayout {
+                            alignment: center;
+                            spacing: 5px;
+                            for dot in 3: Rectangle {
+                                private property <float> phase: Math.mod(animation-tick() / 900ms - dot * 0.16, 1);
+                                width: 7px;
+                                height: 7px;
+                                y: (parent.height - self.height) / 2 - 5px * max(0, Math.sin(phase * 360deg));
+                                border-radius: 3.5px;
+                                background: Theme.on-accent;
+                            }
+                        }
+                        play-focus := FocusScope {
+                            enabled: root.can-play;
+                            focus-on-click: false;
+                            key-pressed(event) => {
+                                if event.text == Key.Return || event.text == Key.Space {
+                                    root.toggle-pause();
+                                    return accept;
+                                }
+                                reject
+                            }
+                        }
+                        if play-focus.has-focus: FocusRing {
+                            width: 68px;
+                            height: 68px;
+                            radius: 31px;
+                        }
+                        play-touch := TouchArea {
+                            enabled: root.can-play && !root.loading;
+                            mouse-cursor: MouseCursor.pointer;
+                            clicked => { root.toggle-pause(); }
+                        }
+                    }
+                    IconButton {
+                        width: 46px;
+                        height: 46px;
+                        y: (parent.height - self.height) / 2;
+                        icon: Icons.next;
+                        icon-size: 22px;
+                        enabled: root.queue.length > 0;
+                        clicked => { root.next(); }
+                    }
+                }
+                Rectangle { horizontal-stretch: 1; }
+                HorizontalLayout {
+                    min-width: 84px;
+                    preferred-width: 112px;
+                    spacing: 4px;
+                    alignment: end;
+                    IconButton {
+                        width: 34px;
+                        height: 34px;
+                        y: (parent.height - self.height) / 2;
+                        icon: root.muted ? Icons.muted : Icons.volume;
+                        icon-size: 18px;
+                        subtle: true;
+                        active: root.muted;
+                        clicked => {
+                            root.muted = !root.muted;
+                            root.volume-changed(root.volume);
+                        }
+                    }
+                    ThinSlider {
+                        min-width: 46px;
+                        preferred-width: 74px;
+                        horizontal-stretch: 1;
+                        value <=> root.volume;
+                        fill: root.muted ? Theme.faint : Theme.muted;
+                        moved(value) => {
+                            // Moving the volume is a clear sign of wanting to hear it.
+                            root.muted = false;
+                            root.volume-changed(value);
+                        }
+                        released(value) => {
+                            root.settings-changed();
+                            keys.focus();
+                        }
+                        scrolled(direction) => { root.nudge-volume(direction * 0.05); }
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 12px;
+                height: 38px;
+                vertical-stretch: 0;
+                Rectangle {
+                    border-radius: 12px;
+                    background: Theme.surface;
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    HorizontalLayout {
+                        padding: 4px;
+                        spacing: 2px;
+                        Tab {
+                            text: "Queue";
+                            count: root.queue.length > 0 ? "\{root.queue.length}" : "";
+                            selected: root.tab == 0;
+                            clicked => { root.tab = 0; }
+                        }
+                        Tab {
+                            text: "History";
+                            selected: root.tab == 1;
+                            clicked => { root.tab = 1; }
+                        }
+                        Tab {
+                            text: "Pinned";
+                            count: root.pins.length + root.pinned-lists.length > 0 ? "\{root.pins.length + root.pinned-lists.length}" : "";
+                            selected: root.tab == 2;
+                            clicked => { root.tab = 2; }
+                        }
+                        Tab {
+                            text: "Library";
+                            selected: root.tab == 4;
+                            clicked => { root.tab = 4; }
+                        }
+                        if root.searching || root.results.length > 0: Tab {
+                            text: root.searching ? "Searching…" : "Results";
+                            selected: root.tab == 3;
+                            clicked => { root.tab = 3; }
+                        }
+                    }
+                }
+                Rectangle { horizontal-stretch: 1; }
+                if root.tab == 0: TextButton {
+                    y: (parent.height - self.height) / 2;
+                    text: "Clear";
+                    enabled: root.queue.length > 0;
+                    clicked => { root.clear-queue(); }
+                }
+                if root.tab == 1: TextButton {
+                    y: (parent.height - self.height) / 2;
+                    text: "Clear";
+                    enabled: root.history.length > 0;
+                    clicked => { root.clear-history(); }
+                }
+                if root.tab == 2: TextButton {
+                    y: (parent.height - self.height) / 2;
+                    text: "Play all";
+                    enabled: root.pins.length > 0;
+                    clicked => { root.play-all-pins(); }
+                }
+            }
+
+            // The lists take whatever height is left, and never draw beyond it.
+            lists-area := Rectangle {
+                vertical-stretch: 1;
+                clip: true;
+                background: Theme.surface;
+                border-radius: 14px;
+                border-width: 1px;
+                border-color: Theme.border;
+                // Room inside the border, so nothing (a scroll bar, a row) touches it.
+                Rectangle {
+                    x: 6px;
+                    y: 6px;
+                    width: parent.width - 12px;
+                    height: parent.height - 12px;
+                    clip: true;
+                    if root.tab == 0 && root.queue.length == 0: EmptyState {
+                        title: "Nothing queued";
+                        hint: "Search, or paste a YouTube link. Ctrl+L gets you there.";
+                    }
+                    if root.tab == 1 && root.history.length == 0: EmptyState {
+                        title: "No history yet";
+                        hint: "Tracks you play show up here.";
+                    }
+                    if root.tab == 2 && root.pins.length == 0 && root.pinned-lists.length == 0: EmptyState {
+                        title: "No pins yet";
+                        hint: "Pin a track, or a playlist from the Library, to keep it here.";
+                    }
+                    if root.tab == 3 && root.results.length == 0 && !root.searching: EmptyState {
+                        title: "No results";
+                        hint: "Try other words, or paste a link.";
+                    }
+                    // The Library, signed out: what it is, and Google's button.
+                    if root.tab == 4 && root.account-state == 0: EmptyState {
+                        title: "Your YouTube library";
+                        hint: "Signing in isn't available in this version yet.";
+                    }
+                    if root.tab == 4 && root.account-state == 1: EmptyState {
+                        title: "Your YouTube library";
+                        // While Google reviews the app, only test accounts can sign in.
+                        hint: "Your liked videos and playlists, private ones included. View only. While Google reviews Featherplay, sign-in works for test accounts only.";
+                        GoogleButton {
+                            label: root.google-label;
+                            clicked => { root.sign-in(); }
+                        }
+                    }
+                    if root.tab == 4 && root.account-state == 2: EmptyState {
+                        title: "Finish signing in in your browser…";
+                        hint: "Featherplay waits for Google's answer. If Google says access is blocked, your account isn't a test account yet.";
+                        TextButton {
+                            text: "Cancel";
+                            clicked => { root.cancel-sign-in(); }
+                        }
+                    }
+                    // Signed in: the account, then its liked videos and playlists. Kept while a
+                    // playlist is open, so going back finds the list where it was.
+                    if root.tab == 4 && root.account-state >= 3: Rectangle {
+                        VerticalLayout {
+                            visible: root.library-open == "";
+                            spacing: 6px;
+// The account: its picture, its name and when the lists were read, and the button that
+// reads them again.
+HorizontalLayout {
+    height: 58px;
+    padding-left: 8px;
+    padding-right: 6px;
+    spacing: 12px;
+    Rectangle {
+        width: 36px;
+        height: 36px;
+        y: (parent.height - self.height) / 2;
+        border-radius: 18px;
+        clip: true;
+        background: Theme.raised;
+        Image {
+            width: 100%;
+            height: 100%;
+            source: root.account-picture;
+            image-fit: ImageFit.cover;
+        }
+    }
+    VerticalLayout {
+        alignment: center;
+        spacing: 2px;
+        horizontal-stretch: 1;
+        Text {
+            text: root.account-state == 3 ? root.account-name : "No YouTube channel";
+            font-size: 14px;
+            font-weight: 700;
+            color: Theme.text;
+            overflow: elide;
+        }
+        if root.library-updated != "": Text {
+            text: root.library-updated;
+            font-size: 12px;
+            font-weight: 500;
+            color: Theme.muted;
+            overflow: elide;
+        }
+    }
+    Pill {
+        y: (parent.height - self.height) / 2;
+        text: root.library-refreshing ? "Refreshing…" : "Refresh";
+        icon: Icons.refresh;
+        enabled: !root.library-refreshing;
+        clicked => { root.library-refresh(); }
+    }
+}
+Rectangle {
+    height: 1px;
+    Rectangle {
+        x: 8px;
+        width: parent.width - 16px;
+        background: Theme.border;
+    }
+}
+                            library-list := ListView {
+                                vertical-scrollbar-policy: ScrollBarPolicy.always-off;
+                                horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+                                for row[index] in root.library: PlaylistRow {
+                                    item: row;
+                                    show-thumb: root.show-thumbs;
+                                    open => { root.library-open-list(row.id); }
+                                    play => { root.library-play(row.id, false); }
+                                    shuffle => { root.library-play(row.id, true); }
+                                    add => { root.library-add(row.id); }
+                                    pin => { root.pin-list(row.id); }
+                                    menu(x, y) => { root.list-menu(6, index, x, y, false); }
+                                    want-thumb(id) => { root.want-thumb(id); }
+                                }
+                            }
+                        }
+                        // An opened list: back, its name, and its tracks.
+                        if root.library-open != "": VerticalLayout {
+                            spacing: 6px;
+HorizontalLayout {
+    height: 70px;
+    padding-right: 6px;
+    spacing: 10px;
+    IconButton {
+        width: 36px;
+        height: 36px;
+        y: (parent.height - self.height) / 2;
+        icon: Icons.back;
+        icon-size: 20px;
+        subtle: true;
+        clicked => { root.library-open = ""; }
+    }
+    if root.show-thumbs || root.library-open == "LL": Rectangle {
+        width: 96px;
+        height: 54px;
+        y: (parent.height - self.height) / 2;
+        border-radius: 10px;
+        clip: true;
+        background: root.library-open == "LL" ? Theme.soft : Theme.raised;
+        if root.library-open == "LL": Path {
+            width: 24px;
+            height: 24px;
+            viewbox-width: 24;
+            viewbox-height: 24;
+            commands: Icons.heart;
+            fill: Theme.accent-text;
+        }
+        if root.library-open != "LL": Image {
+            width: 100%;
+            height: 100%;
+            source: root.library-open-cover;
+            image-fit: ImageFit.cover;
+        }
+    }
+    VerticalLayout {
+        alignment: center;
+        spacing: 3px;
+        horizontal-stretch: 1;
+        Text {
+            text: root.library-title;
+            font-size: 16px;
+            font-weight: 700;
+            color: Theme.text;
+            overflow: elide;
+        }
+        Text {
+            text: root.library-meta;
+            font-size: 12px;
+            font-weight: 500;
+            color: Theme.muted;
+            overflow: elide;
+        }
+    }
+    Pill {
+        y: (parent.height - self.height) / 2;
+        icon: Icons.pin;
+        active: root.library-open-pinned;
+        accessible-label: root.library-open-pinned ? "Unpin" : "Pin";
+        clicked => { root.pin-list(root.library-open); }
+    }
+    Pill {
+        y: (parent.height - self.height) / 2;
+        text: "Shuffle";
+        icon: Icons.shuffle;
+        clicked => { root.library-play(root.library-open, true); }
+    }
+    Pill {
+        y: (parent.height - self.height) / 2;
+        text: "Play all";
+        icon: Icons.play;
+        primary: true;
+        clicked => { root.library-play(root.library-open, false); }
+    }
+}
+Rectangle {
+    height: 1px;
+    Rectangle {
+        x: 8px;
+        width: parent.width - 16px;
+        background: Theme.border;
+    }
+}
+                            TrackList {
+                                rows: root.library-tracks;
+                                show-thumbs: root.show-thumbs;
+                                can-add: true;
+                                name: root.library-title;
+                                focus-request: root.list-focus;
+                                menu(row, x, y, keyboard) => { root.list-menu(5, row, x, y, keyboard); }
+                                scrolled(offset, room) => {
+                                    root.list-scrolled(offset, room);
+                                    // Near the end of what's loaded: the next 50.
+                                    if room - offset < 300px {
+                                        root.library-more();
+                                    }
+                                }
+                                clicked(index) => { root.library-play-track(index); }
+                                pin(index) => { root.library-pin-track(index); }
+                                add(index) => { root.library-add-track(index); }
+                                want-thumb(id) => { root.want-thumb(id); }
+                            }
+                        }
+                    }
+                    if root.tab == 0: TrackList {
+                        name: "Queue";
+                        focus-request: root.list-focus;
+                        menu(row, x, y, keyboard) => { root.list-menu(0, row, x, y, keyboard); }
+                        scrolled(offset, room) => { root.list-scrolled(offset, room); }
+                        rows: root.queue;
+                        show-thumbs: root.show-thumbs;
+                        can-remove: true;
+                        can-drag: true;
+                        clicked(index) => { root.play-row(index); }
+                        pin(index) => { root.pin-row(index); }
+                        remove(index) => { root.remove-row(index); }
+                        moved(from, to) => { root.move-row(from, to); }
+                        want-thumb(id) => { root.want-thumb(id); }
+                    }
+                    if root.tab == 1: TrackList {
+                        name: "History";
+                        focus-request: root.list-focus;
+                        menu(row, x, y, keyboard) => { root.list-menu(1, row, x, y, keyboard); }
+                        scrolled(offset, room) => { root.list-scrolled(offset, room); }
+                        rows: root.history;
+                        show-thumbs: root.show-thumbs;
+                        can-add: true;
+                        can-remove: true;
+                        clicked(index) => { root.play-history(index); }
+                        pin(index) => { root.pin-history(index); }
+                        add(index) => { root.add-history(index); }
+                        remove(index) => { root.remove-history(index); }
+                        want-thumb(id) => { root.want-thumb(id); }
+                    }
+                    // Pinned playlists first, as a row of covers that slides sideways, so the
+                    // pinned tracks below always keep their room.
+                    if root.tab == 2: VerticalLayout {
+                        if root.pinned-lists.length > 0: SectionHeader {
+                            text: "Playlists";
+                            count: root.pinned-lists.length;
+                            open: root.pinned-lists-open;
+                            toggled => { root.pinned-lists-open = !root.pinned-lists-open; }
+                        }
+                        if root.pinned-lists.length > 0 && root.pinned-lists-open: PlaylistShelf {
+                            rows: root.pinned-lists;
+                            show-thumbs: root.show-thumbs;
+                            open(id) => { root.open-pinned-list(id); }
+                            play(id) => { root.library-play(id, false); }
+                            menu(index, x, y) => { root.list-menu(7, index, x, y, false); }
+                            want-thumb(id) => { root.want-thumb(id); }
+                        }
+                        if root.pinned-lists.length > 0 && root.pins.length > 0: SectionHeader {
+                            text: "Tracks";
+                            count: root.pins.length;
+                            open: true;
+                            can-close: false;
+                        }
+                        TrackList {
+                            vertical-stretch: 1;
+                            name: "Pinned";
+                            focus-request: root.list-focus;
+                            menu(row, x, y, keyboard) => { root.list-menu(2, row, x, y, keyboard); }
+                            scrolled(offset, room) => { root.list-scrolled(offset, room); }
+                            rows: root.pins;
+                            show-thumbs: root.show-thumbs;
+                            can-add: true;
+                            can-remove: true;
+                            can-drag: true;
+                            clicked(index) => { root.play-pin(index); }
+                            pin(index) => { root.unpin(index); }
+                            add(index) => { root.add-pin(index); }
+                            // Removing a pin is unpinning it.
+                            remove(index) => { root.unpin(index); }
+                            moved(from, to) => { root.move-pin(from, to); }
+                            want-thumb(id) => { root.want-thumb(id); }
+                        }
+                    }
+                    if root.tab == 3: TrackList {
+                        name: "Search results";
+                        focus-request: root.list-focus;
+                        menu(row, x, y, keyboard) => { root.list-menu(3, row, x, y, keyboard); }
+                        scrolled(offset, room) => {
+                            root.list-scrolled(offset, room);
+                            // Near the end: the next page of results.
+                            if room - offset < 300px {
+                                root.results-more();
+                            }
+                        }
+                        rows: root.results;
+                        show-thumbs: root.show-thumbs;
+                        can-add: true;
+                        clicked(index) => { root.play-result(index); }
+                        pin(index) => { root.pin-result(index); }
+                        add(index) => { root.add-result(index); }
+                        want-thumb(id) => { root.want-thumb(id); }
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                height: 30px;
+                vertical-stretch: 0;
+                Text {
+                    text: "yt-dlp " + root.ytdlp-version;
+                    font-size: 12px;
+                    font-weight: 500;
+                    color: Theme.faint;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+                TextButton {
+                    text: "Settings";
+                    clicked => { root.settings-open = true; }
+                    // A new version is waiting: a small dot, until it is installed.
+                    if root.app-update-state == 3: Rectangle {
+                        x: parent.width - 6px;
+                        y: 4px;
+                        width: 7px;
+                        height: 7px;
+                        border-radius: 3.5px;
+                        background: Theme.accent;
+                    }
+                }
+            }
+        }
+
+        // The track menu, over everything but messages; a press anywhere outside closes it.
+        if root.menu-open: Rectangle {
+            TouchArea {
+                pointer-event(event) => {
+                    if event.kind == PointerEventKind.down {
+                        root.close-menu();
+                    }
+                }
+                scroll-event(event) => {
+                    root.close-menu();
+                    accept
+                }
+            }
+            TrackMenu {
+                items: root.menu-items;
+                x: clamp(root.menu-x, 8px, parent.width - self.width - 8px);
+                // Below the pointer, or above it when there's no room.
+                y: root.menu-y + self.height + 8px > parent.height ? max(8px, root.menu-y - self.height) : root.menu-y;
+                chose(action) => {
+                    root.close-menu();
+                    root.menu-chose(action);
+                }
+                dismissed => { root.close-menu(); }
+            }
+        }
+        clipboard := TextInput {
+            visible: false;
+            width: 0;
+            height: 0;
+            read-only: true;
+        }
+
+        // Settings rise from the bottom over a dimmed window; a click outside closes them.
+        if root.sheet-shown > 0: Rectangle {
+            background: #00000080;
+            opacity: root.sheet-shown;
+            TouchArea {
+                clicked => { root.settings-open = false; }
+            }
+        }
+        Rectangle {
+            x: 12px;
+            width: parent.width - 24px;
+            height: sheet-content.preferred-height;
+            // Placed by how far open it is, so resizing the window never shows it moving.
+            y: parent.height + 8px - (self.height + 20px) * root.sheet-shown;
+            visible: root.sheet-shown > 0;
+            border-radius: 18px;
+            background: Theme.surface;
+            border-width: 1px;
+            border-color: Theme.border;
+            // Clicks on the sheet stay on the sheet.
+            TouchArea { }
+            sheet-content := VerticalLayout {
+                padding: 20px;
+                spacing: 14px;
+                HorizontalLayout {
+                    Text {
+                        text: "Settings";
+                        font-size: 17px;
+                        font-weight: 700;
+                        color: Theme.text;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                    }
+                    IconButton {
+                        accessible-role: button;
+                        accessible-label: "Close settings";
+                        width: 34px;
+                        height: 34px;
+                        icon: Icons.close;
+                        icon-size: 16px;
+                        subtle: true;
+                        clicked => { root.settings-open = false; }
+                    }
+                }
+                Text {
+                    text: "Theme";
+                    font-size: 13px;
+                    font-weight: 700;
+                    color: Theme.muted;
+                }
+                Segmented {
+                    accessible-role: tab-list;
+                    accessible-label: "Theme";
+                    options: ["Auto", "Dark", "Light"];
+                    selected: root.theme-mode;
+                    changed-to(choice) => { root.pick-theme(choice); }
+                }
+                HorizontalLayout {
+                    spacing: 12px;
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 2px;
+                        Text {
+                            text: "Thumbnails in lists";
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: Theme.text;
+                        }
+                        Text {
+                            text: "Turn off for the lightest possible player.";
+                            font-size: 12px;
+                            font-weight: 500;
+                            color: Theme.muted;
+                            wrap: word-wrap;
+                        }
+                    }
+                    Switch {
+                        y: (parent.height - self.height) / 2;
+                        checked: root.show-thumbs;
+                        toggled(on) => {
+                            root.show-thumbs = on;
+                            root.settings-changed();
+                        }
+                    }
+                }
+                Rectangle {
+                    height: 1px;
+                    background: Theme.border;
+                }
+                // The YouTube account, where signing in is possible.
+                if root.account-state != 0: VerticalLayout {
+                    spacing: 10px;
+                    HorizontalLayout {
+                        spacing: 12px;
+                        if root.account-state == 3: Rectangle {
+                            width: 36px;
+                            height: 36px;
+                            y: (parent.height - self.height) / 2;
+                            border-radius: 18px;
+                            clip: true;
+                            background: Theme.raised;
+                            Image {
+                                width: 100%;
+                                height: 100%;
+                                source: root.account-picture;
+                                image-fit: ImageFit.cover;
+                            }
+                        }
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            alignment: center;
+                            spacing: 2px;
+                            Text {
+                                text: root.account-state == 3 ? root.account-name : "YouTube account";
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: Theme.text;
+                                overflow: elide;
+                            }
+                            Text {
+                                text: root.account-state == 1 ? "Not signed in"
+                                    : root.account-state == 2 ? "Finish signing in in your browser…"
+                                    : root.account-state == 3 ? "YouTube account · view only"
+                                    : "Signed in · no YouTube channel";
+                                font-size: 12px;
+                                font-weight: root.account-state == 2 ? 600 : 500;
+                                color: root.account-state == 2 ? Theme.accent-text : Theme.muted;
+                                overflow: elide;
+                            }
+                        }
+                        if root.account-state == 2: TextButton {
+                            y: (parent.height - self.height) / 2;
+                            text: "Copy link";
+                            clicked => { root.copy-sign-in-link(); }
+                        }
+                        if root.account-state == 2: TextButton {
+                            y: (parent.height - self.height) / 2;
+                            text: "Cancel";
+                            clicked => { root.cancel-sign-in(); }
+                        }
+                        if root.account-state >= 3: TextButton {
+                            y: (parent.height - self.height) / 2;
+                            text: "Sign out";
+                            clicked => { root.sign-out(); }
+                        }
+                    }
+                    if root.account-state == 1: HorizontalLayout {
+                        alignment: start;
+                        GoogleButton {
+                            label: root.google-label;
+                            clicked => { root.sign-in(); }
+                        }
+                    }
+                    Text {
+                        text: "Featherplay can only view your playlists and liked videos.";
+                        font-size: 12px;
+                        font-weight: 500;
+                        color: Theme.faint;
+                        wrap: word-wrap;
+                    }
+                    // What signing in agrees to, as YouTube's API rules ask apps to show.
+                    HorizontalLayout {
+                        alignment: start;
+                        spacing: 14px;
+                        Link {
+                            text: "Privacy policy";
+                            clicked => { root.open-policy(0); }
+                        }
+                        Link {
+                            text: "YouTube Terms";
+                            clicked => { root.open-policy(1); }
+                        }
+                        Link {
+                            text: "Google Privacy Policy";
+                            clicked => { root.open-policy(2); }
+                        }
+                    }
+                }
+                if root.account-state != 0: Rectangle {
+                    height: 1px;
+                    background: Theme.border;
+                }
+                // Featherplay itself: the version, and an update when there is one.
+                HorizontalLayout {
+                    spacing: 12px;
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 2px;
+                        Text {
+                            text: "Featherplay " + root.app-version;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: Theme.text;
+                        }
+                        Text {
+                            text: root.app-update-state == 1 ? "Checking for a new version…"
+                                : root.app-update-state == 2 ? "You have the latest version."
+                                : root.app-update-state == 3 ? "Version " + root.app-update-version + " is available."
+                                : root.app-update-state == 4 ? "Downloading version " + root.app-update-version + "… " + round(root.app-update-progress * 100) + "%"
+                                : root.app-update-state == 5 ? "Couldn't update: " + root.app-update-error
+                                : root.app-update-state == 6 ? "Restarting into version " + root.app-update-version + "…"
+                                : "Checked for updates once a day.";
+                            font-size: 12px;
+                            font-weight: root.app-update-state == 3 ? 600 : 500;
+                            color: root.app-update-state == 3 ? Theme.accent-text : Theme.muted;
+                            wrap: word-wrap;
+                        }
+                    }
+                    TextButton {
+                        y: (parent.height - self.height) / 2;
+                        text: root.app-update-state == 3 ? "Update" : root.app-update-state == 5 ? "Try again" : "Check now";
+                        accent: root.app-update-state == 3;
+                        enabled: root.app-update-state != 1 && root.app-update-state != 4 && root.app-update-state != 6;
+                        clicked => {
+                            if root.app-update-state == 3 { root.install-app-update(); } else { root.check-app-update(); }
+                        }
+                    }
+                }
+                Rectangle {
+                    height: 1px;
+                    background: Theme.border;
+                }
+                HorizontalLayout {
+                    spacing: 12px;
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 2px;
+                        Text {
+                            text: "yt-dlp " + root.ytdlp-version;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: Theme.text;
+                        }
+                        Text {
+                            text: "Checked for updates once a week.";
+                            font-size: 12px;
+                            font-weight: 500;
+                            color: Theme.muted;
+                        }
+                    }
+                    TextButton {
+                        y: (parent.height - self.height) / 2;
+                        text: "Check now";
+                        clicked => { root.update-ytdlp(); }
+                    }
+                }
+                Rectangle {
+                    height: 1px;
+                    background: Theme.border;
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    Text {
+                        text: "Featherplay " + root.app-version + " · not affiliated with YouTube";
+                        font-size: 12px;
+                        font-weight: 500;
+                        color: Theme.faint;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                        overflow: elide;
+                    }
+                    TextButton {
+                        text: "About";
+                        clicked => { root.about-open = true; }
+                    }
+                }
+            }
+        }
+
+        // About: the app, its licence, and the toolkit it is built with, over the settings.
+        about-sheet := Rectangle {
+            x: 12px;
+            width: parent.width - 24px;
+            height: about-content.preferred-height;
+            y: parent.height + 8px - (self.height + 20px) * root.about-shown;
+            visible: root.about-shown > 0;
+            border-radius: 18px;
+            background: Theme.surface;
+            border-width: 1px;
+            border-color: Theme.border;
+            drop-shadow-blur: 24px;
+            drop-shadow-color: #00000050;
+            TouchArea { }
+            about-content := VerticalLayout {
+                padding: 20px;
+                spacing: 12px;
+                HorizontalLayout {
+                    Text {
+                        text: "About Featherplay";
+                        font-size: 17px;
+                        font-weight: 700;
+                        color: Theme.text;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                    }
+                    IconButton {
+                        width: 34px;
+                        height: 34px;
+                        icon: Icons.close;
+                        icon-size: 16px;
+                        subtle: true;
+                        clicked => { root.about-open = false; }
+                    }
+                }
+                Text {
+                    text: "Version " + root.app-version + ". A light player for the audio of YouTube videos and playlists. Free software under the GNU GPL, version 3 or later; not affiliated with YouTube or Google. Streams are found by yt-dlp.";
+                    font-size: 13px;
+                    font-weight: 500;
+                    color: Theme.muted;
+                    wrap: word-wrap;
+                }
+                HorizontalLayout {
+                    alignment: start;
+                    TextButton {
+                        text: "github.com/Hamza-ELAKLY/featherplay";
+                        clicked => { root.open-website(); }
+                    }
+                }
+                Rectangle {
+                    height: 1px;
+                    background: Theme.border;
+                }
+                // Slint's attribution, at a modest size whatever the window's width.
+                HorizontalLayout {
+                    alignment: center;
+                    AboutSlint {
+                        width: 168px;
+                        height: 96px;
+                    }
+                }
+            }
+        }
+
+        // Messages ("Added 100 tracks…") rise over the bottom of the window and fade away;
+        // drawn last, so they show over the settings too, at the top while those are open.
+        Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: root.sheet-shown > 0 ? (root.status != "" ? 16px : 6px)
+                : parent.height - self.height - (root.status != "" ? 56px : 46px);
+            animate y { duration: 220ms; easing: ease-out; }
+            opacity: root.status != "" ? 1 : 0;
+            animate opacity { duration: 220ms; }
+            visible: self.opacity > 0;
+            // One line when it fits; on a narrow window, two.
+            width: min(parent.width - 40px, toast-text.preferred-width + 32px);
+            height: max(38px, toast-text.height + 20px);
+            border-radius: 12px;
+            background: Theme.raised;
+            border-width: 1px;
+            border-color: Theme.border;
+            toast-text := Text {
+                width: parent.width - 32px;
+                height: self.preferred-height;
+                text: root.shown-status;
+                font-size: 13px;
+                font-weight: 600;
+                color: Theme.text;
+                wrap: word-wrap;
+                horizontal-alignment: center;
+            }
+        }
+
+        // The theme change's wipe, above everything. The old picture is cut row by row
+        // along the moving diagonal.
+        if root.wiping && root.theme-snapshot.width > 0: wipe-overlay := Rectangle {
+            private property <length> span: self.width + self.height;
+            for strip in ceil(self.height / 1px): Rectangle {
+                private property <length> top: strip * 1px;
+                // Where, along this row, the old picture still shows.
+                private property <length> edge: Theme.light ? parent.span * root.wipe - self.top
+                    : parent.span * (1 - root.wipe) - self.top;
+                x: Theme.light ? clamp(self.edge, 0px, parent.width) : 0px;
+                width: Theme.light ? parent.width - self.x : clamp(self.edge, 0px, parent.width);
+                y: self.top;
+                height: 1px;
+                clip: true;
+                Image {
+                    x: -parent.x;
+                    y: -parent.y;
+                    width: root.width;
+                    height: root.height;
+                    source: root.theme-snapshot;
+                    image-fit: fill;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,80 @@
+name: Release
+
+# Pushing a version tag (v1.2.3) builds the portable Windows release and publishes it,
+# with its notes taken from CHANGELOG.md. A tag with a suffix (v1.2.3-rc1) becomes a
+# pre-release, which the in-app updater never offers. It can also be run by hand for
+# a tag that already exists.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build and publish, like v0.1.1"
+        required: true
+
+# The actions are pinned to exact commits: this job can write to the repository.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ env.TAG }}
+      - name: Tag and version agree
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          [ "v$version" = "$TAG" ] || { echo "Cargo.toml says $version, the tag is $TAG"; exit 1; }
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - name: Tools
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64 pkg-config libasound2-dev libfontconfig1-dev libxkbcommon-dev libwayland-dev libdbus-1-dev
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          targets: x86_64-pc-windows-gnu
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - name: Tests
+        run: cargo test --lib --bins
+      # Featherplay's Google client secret, kept out of the repository (see src/google.rs).
+      - name: Build the release files
+        env:
+          FEATHERPLAY_GOOGLE_SECRET: ${{ secrets.FEATHERPLAY_GOOGLE_SECRET }}
+        run: |
+          [ -n "$FEATHERPLAY_GOOGLE_SECRET" ] || { echo "The FEATHERPLAY_GOOGLE_SECRET secret is not set"; exit 1; }
+          ./scripts/package-windows.sh
+      # The app installs an update only if SHA256SUMS.txt is signed with the release key.
+      - name: Sign the checksums
+        env:
+          FEATHERPLAY_SIGNING_KEY: ${{ secrets.FEATHERPLAY_SIGNING_KEY }}
+        run: |
+          [ -n "$FEATHERPLAY_SIGNING_KEY" ] || { echo "The FEATHERPLAY_SIGNING_KEY secret is not set"; exit 1; }
+          trusted=$(sed -n 's/^const RELEASE_KEY: &str = "\(.*\)";/\1/p' src/update.rs)
+          cargo run --release --example release_sign -- dist/SHA256SUMS.txt --public "$trusted"
+          ls -l dist
+      - name: Notes from the changelog
+        run: |
+          awk -v v="$VERSION" '
+            /^## / { if (found) exit; if (index($0, "## " v " ") == 1 || $0 == "## " v) { found = 1; next } }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          [ -s notes.md ] || { echo "CHANGELOG.md has no section for $VERSION"; exit 1; }
+          # Which file is which: only the zip is for people to download.
+          {
+            echo "**To install, download \`Featherplay-$VERSION-windows-x64.zip\`**, unzip it and run \`featherplay.exe\`."
+            echo "The separate \`featherplay-windows-x64.exe\` is what the in-app updater downloads; on its own it can't play anything."
+            echo
+            cat notes.md
+          } > notes-full.md
+          mv notes-full.md notes.md
+          cat notes.md
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pre=""
+          case "$TAG" in *-*) pre="--prerelease" ;; esac
+          gh release create "$TAG" dist/* --title "Featherplay $VERSION" --notes-file notes.md $pre --verify-tag

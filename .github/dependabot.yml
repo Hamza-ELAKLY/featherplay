@@ -1,0 +1,22 @@
+# Weekly pull requests to keep dependencies current, grouped so they come as one.
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      rust-dependencies:
+        patterns: ["*"]
+    ignore:
+      # Pinned on purpose: the window code uses Slint's winit access, which can change
+      # between releases. Updated by hand, with a test on Windows.
+      - dependency-name: "slint*"
+      - dependency-name: "i-slint-*"
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
