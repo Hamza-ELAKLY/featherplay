@@ -20,7 +20,7 @@ ring = { version = "0.17", default-features = false }
 # can change between Slint releases.
 # accessibility: screen readers can read and use the window (about 1 MB of memory).
 slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-software", "raw-window-handle-06", "unstable-winit-030", "accessibility"] }
-souvlaki = "0.8.3"
+souvlaki = "0.9.3"
 ureq = "3.5.0"
 zune-core = "0.5"
 zune-jpeg = "0.5"

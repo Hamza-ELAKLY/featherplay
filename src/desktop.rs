@@ -70,7 +70,9 @@ impl MediaKeys {
                     MediaControlEvent::Raise => Command::Show,
                     MediaControlEvent::Quit => Command::Quit,
                     MediaControlEvent::OpenUri(uri) => Command::Open(uri),
-                    MediaControlEvent::SetVolume(_) => return,
+                    // Volume, and the newer events (shuffle, repeat; macOS only so far), are
+                    // left to the window.
+                    _ => return,
                 };
                 handler(command);
             })
