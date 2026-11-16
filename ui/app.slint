@@ -1845,6 +1845,8 @@ export component AppWindow inherits Window {
 
     in property <string> track-title: "Nothing playing";
     in property <string> track-channel;
+    // The current track's picture link, for the system's media overlay (not drawn here).
+    in property <string> track-cover-link;
     in property <string> up-next;
     in property <string> status;
     in property <bool> loading;

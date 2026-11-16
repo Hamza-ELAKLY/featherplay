@@ -28,10 +28,15 @@ pub fn video_id(url: &str) -> Option<String> {
     (id.len() == 11 && id.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')).then(|| id.to_string())
 }
 
+/// The link to a video's 16:9 thumbnail (320 × 180).
+pub fn link(id: &str) -> String {
+    format!("https://i.ytimg.com/vi/{id}/mqdefault.jpg")
+}
+
 /// Fetches a video's 16:9 thumbnail and shrinks it to `width` pixels across.
 pub fn fetch(id: &str, width: u32) -> Result<Thumbnail, String> {
     let jpeg = crate::net::agent()
-        .get(&format!("https://i.ytimg.com/vi/{id}/mqdefault.jpg"))
+        .get(&link(id))
         .call()
         .and_then(|mut response| response.body_mut().with_config().limit(1 << 20).read_to_vec())
         .map_err(|e| e.to_string())?;
@@ -123,6 +128,11 @@ mod tests {
         assert_eq!(video_id("https://www.youtube.com/embed/dQw4w9WgXcQ/"), id);
         assert_eq!(video_id("https://www.youtube.com/playlist?list=PL123"), None);
         assert_eq!(video_id("https://www.youtube.com/watch?v=short"), None);
+    }
+
+    #[test]
+    fn the_thumbnail_link_is_youtubes_16_9_picture() {
+        assert_eq!(link("dQw4w9WgXcQ"), "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg");
     }
 
     #[test]
