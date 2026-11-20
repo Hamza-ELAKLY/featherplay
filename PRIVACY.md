@@ -6,8 +6,10 @@ no telemetry. This page says what it reads, where that stays, and how to remove 
 ## Without signing in
 
 Featherplay talks only to YouTube (through yt-dlp, to find a link's audio, a playlist's
-tracks or search results) and to GitHub (to check for updates). Your queue, pins, history
-and settings are saved in the app's own folder on your PC and never sent anywhere.
+tracks or search results) and to GitHub (to check for new versions of Featherplay once a
+day and of yt-dlp once a week; a switch in Settings turns these checks off). Your queue,
+pins, history and settings are saved in the app's own folder on your PC and never sent
+anywhere.
 
 ## Signing in with Google
 
@@ -55,4 +57,4 @@ open a [discussion](https://github.com/Hamza-ELAKLY/featherplay/discussions) or 
 ## Changes
 
 This policy changes with the app; its history is in this repository. Last updated:
-15 November 2026.
+20 November 2026.

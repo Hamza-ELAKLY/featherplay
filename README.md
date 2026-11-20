@@ -142,7 +142,8 @@ Featherplay at it.
 - **Interface:** [Slint](https://slint.dev) with its software renderer; no browser
   engine, no GPU requirement.
 - **Waveform:** measured once in the background by decoding the whole track, then cached.
-- **Self-update:** checks the latest stable release once a day; downloads the new
+- **Self-update:** checks the latest stable release once a day (a switch in Settings
+  turns that off, along with yt-dlp's weekly update); downloads the new
   executable, verifies the release's signature (Ed25519, with a key built into the app)
   and the file's SHA-256, swaps it in and restarts.
 

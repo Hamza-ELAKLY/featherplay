@@ -102,6 +102,7 @@ fn main() -> Result<(), slint::PlatformError> {
     });
     ui.set_show_thumbs(settings.thumbnails);
     ui.set_show_remaining(settings.remaining);
+    ui.set_auto_updates(settings.auto_updates);
     playback.set_volume(settings.volume);
 
     let lists = Lists::default();
@@ -627,9 +628,14 @@ fn main() -> Result<(), slint::PlatformError> {
     let due = store::last_check(&data_dir, APP_CHECK_FILE)
         .and_then(|at| at.elapsed().ok())
         .is_none_or(|age| age >= APP_CHECK_EVERY);
-    if due {
+    if due && settings.auto_updates {
         let (ui, found, data) = (ui.as_weak(), found.clone(), data_dir.clone());
-        Timer::single_shot(APP_CHECK_DELAY, move || check_for_update(ui, found, data, true));
+        Timer::single_shot(APP_CHECK_DELAY, move || {
+            // Unless turned off in the meantime.
+            if ui.upgrade().is_some_and(|ui| ui.get_auto_updates()) {
+                check_for_update(ui, found, data, true);
+            }
+        });
     }
 
     // A new theme comes in with a diagonal wipe over a picture of the old one.
@@ -669,6 +675,7 @@ fn main() -> Result<(), slint::PlatformError> {
         move || app.update_ytdlp()
     });
     app.check_ytdlp();
+    app.set_auto_updates(settings.auto_updates);
     app.update_ytdlp_if_due();
 
     if let Some(place) = settings.window.filter(WindowPlace::plausible) {
@@ -884,6 +891,7 @@ fn main() -> Result<(), slint::PlatformError> {
                 // Off means off: let go of the ones held, not just stop showing them.
                 thumbs.forget_small();
             }
+            app.set_auto_updates(ui.get_auto_updates());
             let settings = Settings {
                 volume: ui.get_volume(),
                 repeat: app.repeat(),
@@ -892,6 +900,7 @@ fn main() -> Result<(), slint::PlatformError> {
                 theme,
                 thumbnails,
                 remaining: ui.get_show_remaining(),
+                auto_updates: ui.get_auto_updates(),
                 // Set by hand in the file: kept as they are.
                 google_client_id: own_client.0.clone(),
                 google_client_secret: own_client.1.clone(),
@@ -1998,6 +2007,52 @@ mod ui_tests {
         let right = input.absolute_position().x + input.size().width;
         assert!(right < edge - 40.0, "the text field ends before the add button: {right} vs box edge {edge}");
         assert_eq!(box_.size().width, find("AppWindow::search").size().width);
+    }
+
+    #[test]
+    fn the_settings_fit_the_smallest_window_and_updates_can_be_turned_off() {
+        let ui = window(0);
+        // The smallest the window goes, with the tallest account section (signed out).
+        ui.window().set_size(slint::LogicalSize::new(380.0, 596.0));
+        ui.set_account_state(1);
+        ui.set_settings_open(true);
+        settle();
+        let content = i_slint_backend_testing::ElementHandle::find_by_element_id(&ui, "AppWindow::sheet-content")
+            .next()
+            .expect("the settings sheet");
+        let top = content.absolute_position().y;
+        assert!(top >= 0.0, "the sheet's top is on screen at the smallest size: {top}");
+        if let Ok(dir) = std::env::var("FEATHERPLAY_SNAPSHOTS") {
+            snapshot(&ui, &format!("{dir}/settings-smallest.png"));
+        }
+
+        let switch = || {
+            i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, "Check for updates automatically")
+                .find(|e| e.accessible_role() == Some(i_slint_backend_testing::AccessibleRole::Checkbox))
+                .expect("the automatic updates switch")
+        };
+        assert!(ui.get_auto_updates(), "on by default");
+        assert_eq!(switch().accessible_checked(), Some(true));
+        let saved = Rc::new(std::cell::Cell::new(0));
+        ui.on_settings_changed({
+            let saved = saved.clone();
+            move || saved.set(saved.get() + 1)
+        });
+        switch().invoke_accessible_default_action();
+        settle();
+        assert!(!ui.get_auto_updates() && saved.get() == 1, "turned off and saved");
+        let says = |text: &str| i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, text).count();
+        assert_eq!(says("Only when you click Check now."), 1);
+
+        // An update on offer adds a line under Featherplay's version: still on screen.
+        ui.set_app_update_version("10.0.0".into());
+        ui.set_app_update_state(3);
+        settle();
+        let top = content.absolute_position().y;
+        assert!(top >= 0.0, "with an update on offer too: {top}");
+        if let Ok(dir) = std::env::var("FEATHERPLAY_SNAPSHOTS") {
+            snapshot(&ui, &format!("{dir}/settings-updates-off.png"));
+        }
     }
 
     #[test]

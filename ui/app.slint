@@ -1652,6 +1652,13 @@ component Switch inherits Rectangle {
     in-out property <bool> checked;
     callback toggled(bool);
 
+    accessible-role: checkbox;
+    accessible-checkable: true;
+    accessible-checked: root.checked;
+    accessible-action-default => {
+        root.checked = !root.checked;
+        root.toggled(root.checked);
+    }
     width: 40px;
     height: 24px;
     border-radius: 12px;
@@ -1880,6 +1887,8 @@ export component AppWindow inherits Window {
     // 0 follows the system, 1 dark, 2 light.
     in-out property <int> theme-mode;
     in-out property <bool> show-thumbs: true;
+    // Featherplay and yt-dlp are checked for new versions on their own (Settings).
+    in-out property <bool> auto-updates: true;
     // The Library tab: the account's playlists (the liked videos first), and the one opened.
     in property <[LibraryRow]> library;
     // The opened list's id; empty for none.
@@ -3129,6 +3138,7 @@ Rectangle {
                     }
                     Switch {
                         y: (parent.height - self.height) / 2;
+                        accessible-label: "Thumbnails in lists";
                         checked: root.show-thumbs;
                         toggled(on) => {
                             root.show-thumbs = on;
@@ -3233,6 +3243,36 @@ Rectangle {
                     height: 1px;
                     background: Theme.border;
                 }
+                // Updates: whether they're checked for on their own, then Featherplay and yt-dlp.
+                HorizontalLayout {
+                    spacing: 12px;
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 2px;
+                        Text {
+                            text: "Check for updates automatically";
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: Theme.text;
+                        }
+                        Text {
+                            text: root.auto-updates ? "Featherplay once a day, yt-dlp once a week." : "Only when you click Check now.";
+                            font-size: 12px;
+                            font-weight: 500;
+                            color: Theme.muted;
+                            wrap: word-wrap;
+                        }
+                    }
+                    Switch {
+                        y: (parent.height - self.height) / 2;
+                        accessible-label: "Check for updates automatically";
+                        checked: root.auto-updates;
+                        toggled(on) => {
+                            root.auto-updates = on;
+                            root.settings-changed();
+                        }
+                    }
+                }
                 // Featherplay itself: the version, and an update when there is one.
                 HorizontalLayout {
                     spacing: 12px;
@@ -3245,14 +3285,15 @@ Rectangle {
                             font-weight: 600;
                             color: Theme.text;
                         }
-                        Text {
+                        // Only while there's something to say: the switch above says how often.
+                        if root.app-update-state != 0: Text {
                             text: root.app-update-state == 1 ? "Checking for a new version…"
                                 : root.app-update-state == 2 ? "You have the latest version."
                                 : root.app-update-state == 3 ? "Version " + root.app-update-version + " is available."
                                 : root.app-update-state == 4 ? "Downloading version " + root.app-update-version + "… " + round(root.app-update-progress * 100) + "%"
                                 : root.app-update-state == 5 ? "Couldn't update: " + root.app-update-error
                                 : root.app-update-state == 6 ? "Restarting into version " + root.app-update-version + "…"
-                                : "Checked for updates once a day.";
+                                : "";
                             font-size: 12px;
                             font-weight: root.app-update-state == 3 ? 600 : 500;
                             color: root.app-update-state == 3 ? Theme.accent-text : Theme.muted;
@@ -3269,27 +3310,16 @@ Rectangle {
                         }
                     }
                 }
-                Rectangle {
-                    height: 1px;
-                    background: Theme.border;
-                }
                 HorizontalLayout {
                     spacing: 12px;
-                    VerticalLayout {
+                    Text {
+                        text: "yt-dlp " + root.ytdlp-version;
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: Theme.text;
+                        vertical-alignment: center;
                         horizontal-stretch: 1;
-                        spacing: 2px;
-                        Text {
-                            text: "yt-dlp " + root.ytdlp-version;
-                            font-size: 14px;
-                            font-weight: 600;
-                            color: Theme.text;
-                        }
-                        Text {
-                            text: "Checked for updates once a week.";
-                            font-size: 12px;
-                            font-weight: 500;
-                            color: Theme.muted;
-                        }
+                        overflow: elide;
                     }
                     TextButton {
                         y: (parent.height - self.height) / 2;

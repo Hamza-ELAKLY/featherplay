@@ -70,6 +70,9 @@ pub struct Settings {
     pub thumbnails: bool,
     /// The time left under the waveform, instead of the track's length.
     pub remaining: bool,
+    /// Checks for new versions of Featherplay (daily) and yt-dlp (weekly) on its own. Off,
+    /// they're checked only when asked, in Settings.
+    pub auto_updates: bool,
     /// A Google client of one's own for signing in, instead of Featherplay's (advanced; set
     /// by hand in settings.json).
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -88,6 +91,7 @@ impl Default for Settings {
             theme: ThemeMode::Auto,
             thumbnails: true,
             remaining: false,
+            auto_updates: true,
             google_client_id: None,
             google_client_secret: None,
         }
@@ -525,6 +529,7 @@ mod tests {
             theme: ThemeMode::Light,
             thumbnails: false,
             remaining: true,
+            auto_updates: false,
             google_client_id: Some("mine.apps.googleusercontent.com".into()),
             google_client_secret: None,
         };
@@ -537,6 +542,7 @@ mod tests {
         std::fs::write(dir.join("settings.json"), br#"{"volume": 7, "shuffle": true}"#).unwrap();
         let partial = Settings::load(&dir);
         assert_eq!((partial.volume, partial.shuffle, partial.repeat), (1.0, true, Repeat::Off));
+        assert!(partial.auto_updates, "files from before the switch keep updating on their own");
 
         std::fs::write(
             dir.join("settings.json"),

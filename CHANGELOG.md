@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Settings has a switch to stop checking for updates automatically (Featherplay once a
+  day, yt-dlp once a week); Check now still works when it's off
+- Screen readers announce Settings' switches and whether they're on
+
 ## 1.0.0 — first public release
 
 Sign-in with Google is in its testing period: until Google finishes reviewing
