@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- The tabs and the list's Clear or Play all button fit the narrowest window: the tabs
+  give up some padding first, then the button shows as an icon, and with the search
+  Results tab too the tabs get a little smaller, with counts on the selected tab only
+
 ## 1.0.0 — first public release
 
 Sign-in with Google is in its testing period: until Google finishes reviewing

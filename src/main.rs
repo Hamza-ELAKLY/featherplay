@@ -2001,6 +2001,52 @@ mod ui_tests {
     }
 
     #[test]
+    fn the_tabs_and_their_button_fit_from_the_smallest_window_up() {
+        let ui = window(8);
+        ui.set_history(ModelRc::new(VecModel::from((0..5).map(|i| row(&format!("Played {i}"))).collect::<Vec<_>>())));
+        ui.set_pins(ModelRc::new(VecModel::from((0..12).map(|i| row(&format!("Pin {i}"))).collect::<Vec<_>>())));
+        let tabs = || i_slint_backend_testing::ElementHandle::find_by_element_type_name(&ui, "Tab").collect::<Vec<_>>();
+        // Each tab's button, as text or, short of room, as an icon.
+        let buttons =
+            [(0, "Clear", "Clear the queue"), (1, "Clear", "Clear history"), (2, "Play all", "Play all pins")];
+        for results in [false, true] {
+            let found: Vec<QueueRow> = if results { vec![row("A result")] } else { Vec::new() };
+            ui.set_results(ModelRc::new(VecModel::from(found)));
+            for (tab, text, icon) in buttons {
+                ui.set_tab(tab);
+                for width in [380.0, 400.0, 420.0, 440.0, 480.0, 640.0] {
+                    ui.window().set_size(slint::LogicalSize::new(width, 800.0));
+                    settle();
+                    let button = i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, text)
+                        .chain(i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, icon))
+                        .next()
+                        .unwrap_or_else(|| panic!("{text} on tab {tab} at {width}"));
+                    let left = button.absolute_position().x;
+                    let right = left + button.size().width;
+                    let case = format!("tab {tab} at {width}, results {results}");
+                    assert!(right <= width - 20.0, "{text} is inside the window ({case}): ends at {right}");
+                    let tabs = tabs();
+                    assert_eq!(tabs.len(), if results { 5 } else { 4 });
+                    for t in &tabs {
+                        let end = t.absolute_position().x + t.size().width;
+                        assert!(end <= left - 4.0, "a tab runs into {text} ({case}): {end} > {left}");
+                    }
+                    if width >= 480.0 && !results {
+                        assert!(
+                            button.accessible_label().as_deref() == Some(text),
+                            "words while there's room ({case})"
+                        );
+                    }
+                    if let (Ok(dir), 0 | 2) = (std::env::var("FEATHERPLAY_SNAPSHOTS"), tab) {
+                        let kind = if results { "results" } else { "plain" };
+                        snapshot(&ui, &format!("{dir}/tabs-{tab}-{width}-{kind}.png"));
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
     fn about_shows_the_version_and_slints_attribution() {
         let ui = window(0);
         ui.set_app_version(env!("CARGO_PKG_VERSION").into());
