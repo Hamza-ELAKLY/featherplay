@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- The Queue keeps the track playing in view: it opens at it, and follows the music
+  while you're following it; scrolled elsewhere, it stays put and a Now playing button
+  at the list's edge takes you back
+
 ## 1.0.0 — first public release
 
 Sign-in with Google is in its testing period: until Google finishes reviewing

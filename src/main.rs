@@ -1487,6 +1487,7 @@ fn refresh(ui: &AppWindow, app: &Arc<App>, lists: &Lists, thumbs: &Thumbs, shown
     let pinned: HashSet<String> = pins.iter().map(|t| t.url.clone()).collect();
     let tracks = app.tracks();
     lists.queue.set_vec(rows(&tracks, now.index, &pinned, thumbs));
+    ui.set_queue_current(now.index.and_then(|i| i32::try_from(i).ok()).unwrap_or(-1));
     let history: Vec<Track> = app.history().iter().map(Track::from).collect();
     lists.history.set_vec(rows(&history, None, &pinned, thumbs));
     lists.results.set_vec(rows(&app.search_results(), None, &pinned, thumbs));
@@ -2548,6 +2549,120 @@ mod ui_tests {
         let (_, top, height) = rows(ui);
         let position = LogicalPosition::new(150.0, top.max(560.0) + height);
         send(ui, WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: -pixels });
+    }
+
+    #[test]
+    fn the_queue_keeps_up_with_the_track_playing() {
+        let ui = window(100);
+        // Plays row `k`, as the app shows it: the row marked, and the list told.
+        let play = |k: i32| {
+            let rows: Vec<QueueRow> = (0..100)
+                .map(|i| QueueRow {
+                    current: i == k,
+                    meta: "Channel · 3:00".into(),
+                    title: format!("Track {i}").into(),
+                    ..Default::default()
+                })
+                .collect();
+            ui.set_queue(ModelRc::new(VecModel::from(rows)));
+            ui.set_queue_current(k);
+        };
+        // The first row wholly in view, by its title ("Track 12" is row 12).
+        let first = || {
+            let list =
+                i_slint_backend_testing::ElementHandle::find_by_element_type_name(&ui, "TrackList").next().unwrap();
+            let (top, bottom) = (list.absolute_position().y, list.absolute_position().y + list.size().height);
+            i_slint_backend_testing::ElementHandle::find_by_element_type_name(&ui, "TrackRow")
+                .filter(|r| {
+                    r.absolute_position().y >= top - 1.0 && r.absolute_position().y + r.size().height <= bottom + 1.0
+                })
+                .min_by(|a, b| a.absolute_position().y.total_cmp(&b.absolute_position().y))
+                .and_then(|r| {
+                    (0..100).find(|i| {
+                        i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, &format!("Track {i}"))
+                            .any(|t| {
+                                let y = t.absolute_position().y;
+                                y >= r.absolute_position().y && y < r.absolute_position().y + r.size().height
+                            })
+                    })
+                })
+                .unwrap()
+        };
+        // The track playing shows near the top, with a row or a few before it (the card
+        // above the list slims as it scrolls, and the rows stay put while it does).
+        let near_top = |playing: usize| {
+            let first = first();
+            first < playing && playing - first <= 3
+        };
+        let pill =
+            || i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, "Show the track playing").next();
+
+        // A session picked up at track 50: the list opens there, one row above it showing.
+        play(50);
+        settle();
+        assert!(near_top(50), "opens at the track playing, one row above it showing: first row {}", first());
+        assert!(pill().is_none(), "it shows, so no button");
+
+        // Following along: the next track is in view already, so nothing moves.
+        play(51);
+        settle();
+        assert!(near_top(51) || first() == 49, "nothing moved");
+        // A jump further on (a skip, or the end of a few tracks): the list keeps up.
+        play(70);
+        settle();
+        assert!(near_top(70), "kept up with the music: first row {}", first());
+
+        // Scrolled away to look at something: the list stays put and offers the way back.
+        for _ in 0..60 {
+            wheel(&ui, -120.0);
+        }
+        settle();
+        let looking = first();
+        assert!(looking < 60, "scrolled up: {looking}");
+        assert!(pill().is_some(), "a Now playing button");
+        if let Ok(dir) = std::env::var("FEATHERPLAY_SNAPSHOTS") {
+            snapshot(&ui, &format!("{dir}/follow-scrolled-away.png"));
+            ui.set_theme_mode(2);
+            settle();
+            snapshot(&ui, &format!("{dir}/follow-scrolled-away-light.png"));
+            ui.set_theme_mode(1);
+            settle();
+        }
+        play(71);
+        settle();
+        assert_eq!(first(), looking, "not pulled away from what's being looked at");
+        // Scrolled the other way, past it: the button points up.
+        for _ in 0..80 {
+            wheel(&ui, 120.0);
+        }
+        settle();
+        if let Ok(dir) = std::env::var("FEATHERPLAY_SNAPSHOTS") {
+            snapshot(&ui, &format!("{dir}/follow-scrolled-past.png"));
+        }
+        assert!(pill().is_some(), "a Now playing button, pointing up");
+        pill().unwrap().invoke_accessible_default_action();
+        settle();
+        assert!(near_top(71), "back to the track playing: first row {}", first());
+        if let Ok(dir) = std::env::var("FEATHERPLAY_SNAPSHOTS") {
+            snapshot(&ui, &format!("{dir}/follow-back.png"));
+        }
+        assert!(pill().is_none());
+
+        // Another tab and back: the Queue opens at the track playing again.
+        ui.set_tab(1);
+        settle();
+        ui.set_tab(0);
+        settle();
+        assert!(near_top(71), "the Queue reopens at the track playing: first row {}", first());
+
+        // Near the end, it goes as far as the list does.
+        play(99);
+        settle();
+        // The list settles its rows after a long jump; the button then stays away.
+        for _ in 0..2 {
+            settle();
+        }
+        assert!(pill().is_none(), "the last track shows");
     }
 
     #[test]
