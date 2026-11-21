@@ -1971,6 +1971,15 @@ export component AppWindow inherits Window {
     in property <string> app-update-error;
     callback check-app-update();
     callback install-app-update();
+    // The new version's notes, on GitHub.
+    callback open-release-notes();
+    // The notice of a new version was put off ("Later"); it comes back at the next start.
+    in-out property <bool> update-later;
+    // Shown for a version found (3), its download (4), a failed install (5: only once a
+    // version was found, not for a check that failed) and the restart (6).
+    private property <bool> notice-shown: (root.app-update-state == 3 || root.app-update-state == 4 || root.app-update-state == 6
+            || (root.app-update-state == 5 && root.app-update-version != ""))
+        && !root.update-later && !root.settings-open;
     in-out property <bool> about-open;
     callback open-website();
     // Closing the settings closes the About sheet over them too.
@@ -3256,7 +3265,7 @@ Rectangle {
                             color: Theme.text;
                         }
                         Text {
-                            text: root.auto-updates ? "Featherplay once a day, yt-dlp once a week." : "Only when you click Check now.";
+                            text: root.auto-updates ? "Featherplay at each start, yt-dlp weekly." : "Only when you click Check now.";
                             font-size: 12px;
                             font-weight: 500;
                             color: Theme.muted;
@@ -3414,12 +3423,108 @@ Rectangle {
             }
         }
 
+        // A new version of Featherplay: a notice rises over the bottom of the window and stays
+        // until it's installed or put off till the next start.
+        update-notice := Rectangle {
+            width: min(parent.width - 24px, 460px);
+            x: (parent.width - self.width) / 2;
+            height: notice-content.preferred-height;
+            y: root.notice-shown ? parent.height - self.height - 46px : parent.height + 12px;
+            animate y { duration: 280ms; easing: ease-out; }
+            visible: self.y < parent.height;
+            border-radius: 14px;
+            background: Theme.surface;
+            border-width: 1px;
+            border-color: Theme.border;
+            drop-shadow-blur: 24px;
+            drop-shadow-color: #00000050;
+            clip: true;
+            // Clicks on the notice stay on it.
+            TouchArea { }
+            notice-content := HorizontalLayout {
+                padding: 12px;
+                padding-left: 14px;
+                spacing: 12px;
+                Rectangle {
+                    width: 34px;
+                    height: 34px;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: 17px;
+                    background: Theme.accent;
+                    Path {
+                        width: 22px;
+                        height: 22px;
+                        viewbox-width: 24;
+                        viewbox-height: 24;
+                        commands: Icons.feather;
+                        fill: transparent;
+                        stroke: Theme.on-accent;
+                        stroke-width: 1.6px;
+                        stroke-line-cap: round;
+                    }
+                }
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    alignment: center;
+                    spacing: 2px;
+                    Text {
+                        text: root.app-update-state == 4 ? "Downloading the update…"
+                            : root.app-update-state == 5 ? "Couldn't update"
+                            : root.app-update-state == 6 ? "Restarting…"
+                            : "Update available";
+                        font-size: 14px;
+                        font-weight: 700;
+                        color: Theme.text;
+                        overflow: elide;
+                    }
+                    HorizontalLayout {
+                        alignment: start;
+                        spacing: 6px;
+                        Text {
+                            text: root.app-update-state == 4 ? round(root.app-update-progress * 100) + "% · playback goes on meanwhile"
+                                : root.app-update-state == 5 ? root.app-update-error
+                                : root.app-update-state == 6 ? "into Featherplay " + root.app-update-version
+                                : "v" + root.app-update-version + " ·";
+                            font-size: 12px;
+                            font-weight: 500;
+                            color: Theme.muted;
+                            overflow: elide;
+                        }
+                        if root.app-update-state == 3: Link {
+                            text: "What's new";
+                            clicked => { root.open-release-notes(); }
+                        }
+                    }
+                }
+                if root.app-update-state == 3 || root.app-update-state == 5: TextButton {
+                    y: (parent.height - self.height) / 2;
+                    text: "Later";
+                    clicked => { root.update-later = true; }
+                }
+                if root.app-update-state == 3 || root.app-update-state == 5: TextButton {
+                    y: (parent.height - self.height) / 2;
+                    text: root.app-update-state == 5 ? "Try again" : "Update";
+                    accent: true;
+                    clicked => { root.install-app-update(); }
+                }
+            }
+            // The download's progress, along the bottom edge.
+            if root.app-update-state == 4: Rectangle {
+                x: 0;
+                y: parent.height - 3px;
+                width: parent.width * root.app-update-progress;
+                height: 3px;
+                background: Theme.accent;
+            }
+        }
+
         // Messages ("Added 100 tracks…") rise over the bottom of the window and fade away;
         // drawn last, so they show over the settings too, at the top while those are open.
         Rectangle {
             x: (parent.width - self.width) / 2;
             y: root.sheet-shown > 0 ? (root.status != "" ? 16px : 6px)
-                : parent.height - self.height - (root.status != "" ? 56px : 46px);
+                : parent.height - self.height - (root.status != "" ? 56px : 46px)
+                    - (root.notice-shown ? update-notice.height + 10px : 0px);
             animate y { duration: 220ms; easing: ease-out; }
             opacity: root.status != "" ? 1 : 0;
             animate opacity { duration: 220ms; }

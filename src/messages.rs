@@ -132,9 +132,6 @@ pub fn ytdlp_rescued() -> String {
 pub fn ytdlp_may_be_old() -> String {
     "Tracks keep failing · updating yt-dlp in Settings may help".into()
 }
-pub fn app_update(version: &str) -> String {
-    format!("Featherplay {version} is out · see Settings")
-}
 
 // The YouTube account.
 pub fn signed_in(name: &str) -> String {
@@ -214,7 +211,6 @@ pub fn every(title: &str) -> Vec<String> {
         ytdlp_update_failed(),
         ytdlp_rescued(),
         ytdlp_may_be_old(),
-        app_update("10.10.10"),
         couldnt_save("settings"),
         signed_in(title),
         sign_in_cancelled(),
