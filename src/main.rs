@@ -2036,6 +2036,15 @@ mod ui_tests {
         let corner = button("Focus");
         let (t, c) = (tile.absolute_position(), corner.absolute_position());
         assert!(c.x > t.x + tile.size().width / 2.0 && c.y < t.y + 20.0, "top right: tile {t:?}, button {c:?}");
+        // Play sits in the opposite corner, clear of it.
+        let play = i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, "Play Focus")
+            .next()
+            .expect("a Play button on Focus")
+            .absolute_position();
+        assert!(
+            play.x < t.x + tile.size().width / 2.0 && play.y > t.y + 20.0,
+            "bottom left: tile {t:?}, play {play:?}"
+        );
         if let Ok(dir) = std::env::var("FEATHERPLAY_SNAPSHOTS") {
             pointer(&ui, t.x + 40.0, t.y + 30.0);
             settle();
@@ -3070,9 +3079,9 @@ mod ui_tests {
         press(&ui, at.x + 40.0, at.y + 20.0, true);
         press(&ui, at.x + 40.0, at.y + 20.0, false);
         assert_eq!(*opened.borrow(), ["PLnight"]);
-        // Its play button (in the cover's corner, showing on hover) plays it.
+        // Its play button (in the cover's bottom left corner, showing on hover) plays it.
         let at = tiles[1].absolute_position();
-        let (x, y) = (at.x + 112.0 - 6.0 - 14.0, at.y + 63.0 - 6.0 - 14.0);
+        let (x, y) = (at.x + 6.0 + 14.0, at.y + 63.0 - 6.0 - 14.0);
         pointer(&ui, x, y);
         settle();
         press(&ui, x, y, true);

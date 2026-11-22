@@ -1424,13 +1424,17 @@ component PlaylistTile inherits Rectangle {
             source: root.item.thumb;
             image-fit: ImageFit.cover;
         }
-        // Pointed at: a little darker, with play in one corner and remove in the other.
+        // Pointed at: a little darker, with play in one corner and remove in the opposite one.
         Rectangle {
             background: touch.has-hover || play-touch.has-hover || remove-touch.has-hover ? #00000026 : transparent;
             animate background { duration: 140ms; }
         }
+        // Play in the bottom left corner, remove alone in the top right.
         Rectangle {
-            x: parent.width - self.width - 6px;
+            accessible-role: button;
+            accessible-label: "Play " + root.item.title;
+            accessible-action-default => { root.play(); }
+            x: 6px;
             y: parent.height - self.height - 6px;
             width: 28px;
             height: 28px;
