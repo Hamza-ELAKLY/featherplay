@@ -2773,19 +2773,28 @@ Rectangle {
         background: Theme.border;
     }
 }
-                            library-list := ListView {
-                                vertical-scrollbar-policy: ScrollBarPolicy.always-off;
-                                horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
-                                for row[index] in root.library: PlaylistRow {
-                                    item: row;
-                                    show-thumb: root.show-thumbs;
-                                    open => { root.library-open-list(row.id); }
-                                    play => { root.library-play(row.id, false); }
-                                    shuffle => { root.library-play(row.id, true); }
-                                    add => { root.library-add(row.id); }
-                                    pin => { root.pin-list(row.id); }
-                                    menu(x, y) => { root.list-menu(6, index, x, y, false); }
-                                    want-thumb(id) => { root.want-thumb(id); }
+                            // The playlists, with the same scroll rail as the other lists.
+                            HorizontalLayout {
+                                spacing: 4px;
+                                library-list := ListView {
+                                    vertical-scrollbar-policy: ScrollBarPolicy.always-off;
+                                    horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+                                    for row[index] in root.library: PlaylistRow {
+                                        item: row;
+                                        show-thumb: root.show-thumbs;
+                                        open => { root.library-open-list(row.id); }
+                                        play => { root.library-play(row.id, false); }
+                                        shuffle => { root.library-play(row.id, true); }
+                                        add => { root.library-add(row.id); }
+                                        pin => { root.pin-list(row.id); }
+                                        menu(x, y) => { root.list-menu(6, index, x, y, false); }
+                                        want-thumb(id) => { root.want-thumb(id); }
+                                    }
+                                }
+                                ScrollRail {
+                                    offset <=> library-list.content-y;
+                                    content: library-list.content-height;
+                                    visible-height: library-list.visible-height;
                                 }
                             }
                         }
