@@ -2001,6 +2001,60 @@ mod ui_tests {
     }
 
     #[test]
+    fn a_pinned_playlist_can_be_unpinned_from_its_corner() {
+        let ui = window(0);
+        let lists: Vec<LibraryRow> = ["Morning", "Focus", "Evening"]
+            .iter()
+            .enumerate()
+            .map(|(i, t)| LibraryRow {
+                id: format!("PL{i}").into(),
+                title: (*t).into(),
+                meta: "12 tracks".into(),
+                pinned: true,
+                ..Default::default()
+            })
+            .collect();
+        ui.set_pinned_lists(ModelRc::new(VecModel::from(lists)));
+        ui.set_tab(2);
+        settle();
+        let unpinned = Rc::new(RefCell::new(Vec::new()));
+        ui.on_pin_list({
+            let unpinned = unpinned.clone();
+            move |id| unpinned.borrow_mut().push(id.to_string())
+        });
+        let button = |title: &str| {
+            i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, &format!("Unpin {title}"))
+                .next()
+                .unwrap_or_else(|| panic!("an Unpin button on {title}"))
+        };
+        for title in ["Morning", "Focus", "Evening"] {
+            button(title);
+        }
+        // On the cover's top right corner.
+        let tile =
+            i_slint_backend_testing::ElementHandle::find_by_element_type_name(&ui, "PlaylistTile").nth(1).unwrap();
+        let corner = button("Focus");
+        let (t, c) = (tile.absolute_position(), corner.absolute_position());
+        assert!(c.x > t.x + tile.size().width / 2.0 && c.y < t.y + 20.0, "top right: tile {t:?}, button {c:?}");
+        // Play sits in the opposite corner, clear of it.
+        let play = i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, "Play Focus")
+            .next()
+            .expect("a Play button on Focus")
+            .absolute_position();
+        assert!(
+            play.x < t.x + tile.size().width / 2.0 && play.y > t.y + 20.0,
+            "bottom left: tile {t:?}, play {play:?}"
+        );
+        if let Ok(dir) = std::env::var("FEATHERPLAY_SNAPSHOTS") {
+            pointer(&ui, t.x + 40.0, t.y + 30.0);
+            settle();
+            snapshot(&ui, &format!("{dir}/unpin-hover.png"));
+        }
+        corner.invoke_accessible_default_action();
+        assert_eq!(*unpinned.borrow(), vec!["PL1".to_string()], "Focus, and only Focus, is unpinned");
+    }
+
+    #[test]
     fn about_shows_the_version_and_slints_attribution() {
         let ui = window(0);
         ui.set_app_version(env!("CARGO_PKG_VERSION").into());
@@ -3025,9 +3079,9 @@ mod ui_tests {
         press(&ui, at.x + 40.0, at.y + 20.0, true);
         press(&ui, at.x + 40.0, at.y + 20.0, false);
         assert_eq!(*opened.borrow(), ["PLnight"]);
-        // Its play button (in the cover's corner, showing on hover) plays it.
+        // Its play button (in the cover's bottom left corner, showing on hover) plays it.
         let at = tiles[1].absolute_position();
-        let (x, y) = (at.x + 112.0 - 6.0 - 14.0, at.y + 63.0 - 6.0 - 14.0);
+        let (x, y) = (at.x + 6.0 + 14.0, at.y + 63.0 - 6.0 - 14.0);
         pointer(&ui, x, y);
         settle();
         press(&ui, x, y, true);

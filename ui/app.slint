@@ -1380,6 +1380,8 @@ component PlaylistTile inherits Rectangle {
     in property <bool> show-thumb: true;
     callback open;
     callback play;
+    // Takes it off the shelf (unpins it).
+    callback remove;
     callback menu(length, length);
     callback want-thumb(string);
 
@@ -1422,19 +1424,23 @@ component PlaylistTile inherits Rectangle {
             source: root.item.thumb;
             image-fit: ImageFit.cover;
         }
-        // Pointed at: a little darker, with a play button in the corner.
+        // Pointed at: a little darker, with play in one corner and remove in the opposite one.
         Rectangle {
-            background: touch.has-hover || play-touch.has-hover ? #00000026 : transparent;
+            background: touch.has-hover || play-touch.has-hover || remove-touch.has-hover ? #00000026 : transparent;
             animate background { duration: 140ms; }
         }
+        // Play in the bottom left corner, remove alone in the top right.
         Rectangle {
-            x: parent.width - self.width - 6px;
+            accessible-role: button;
+            accessible-label: "Play " + root.item.title;
+            accessible-action-default => { root.play(); }
+            x: 6px;
             y: parent.height - self.height - 6px;
             width: 28px;
             height: 28px;
             border-radius: 14px;
             background: play-touch.has-hover ? Theme.accent.brighter(0.08) : Theme.accent;
-            opacity: touch.has-hover || play-touch.has-hover ? 1 : 0;
+            opacity: touch.has-hover || play-touch.has-hover || remove-touch.has-hover ? 1 : 0;
             animate opacity { duration: 140ms; }
             Path {
                 width: 14px;
@@ -1447,6 +1453,32 @@ component PlaylistTile inherits Rectangle {
             play-touch := TouchArea {
                 mouse-cursor: MouseCursor.pointer;
                 clicked => { root.play(); }
+            }
+        }
+        // Remove, dark so it reads over any cover.
+        Rectangle {
+            x: parent.width - self.width - 5px;
+            y: 5px;
+            width: 22px;
+            height: 22px;
+            border-radius: 11px;
+            background: remove-touch.has-hover ? #000000c0 : #00000090;
+            opacity: touch.has-hover || play-touch.has-hover || remove-touch.has-hover ? 1 : 0;
+            animate opacity { duration: 140ms; }
+            accessible-role: button;
+            accessible-label: "Unpin " + root.item.title;
+            accessible-action-default => { root.remove(); }
+            Path {
+                width: 12px;
+                height: 12px;
+                viewbox-width: 24;
+                viewbox-height: 24;
+                commands: Icons.close;
+                fill: #ffffff;
+            }
+            remove-touch := TouchArea {
+                mouse-cursor: MouseCursor.pointer;
+                clicked => { root.remove(); }
             }
         }
     }
@@ -1476,6 +1508,7 @@ component PlaylistShelf inherits Rectangle {
     in property <bool> show-thumbs;
     callback open(string);
     callback play(string);
+    callback remove(string);
     callback menu(int, length, length);
     callback want-thumb(string);
 
@@ -1508,6 +1541,7 @@ component PlaylistShelf inherits Rectangle {
                 show-thumb: root.show-thumbs;
                 open => { root.open(row.id); }
                 play => { root.play(row.id); }
+                remove => { root.remove(row.id); }
                 menu(x, y) => { root.menu(index, x, y); }
                 want-thumb(id) => { root.want-thumb(id); }
             }
@@ -2940,6 +2974,7 @@ Rectangle {
                             show-thumbs: root.show-thumbs;
                             open(id) => { root.open-pinned-list(id); }
                             play(id) => { root.library-play(id, false); }
+                            remove(id) => { root.pin-list(id); }
                             menu(index, x, y) => { root.list-menu(7, index, x, y, false); }
                             want-thumb(id) => { root.want-thumb(id); }
                         }
