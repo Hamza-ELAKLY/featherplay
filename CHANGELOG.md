@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- A pinned playlist has a remove button in its cover's corner, next to play, to unpin it
+  without opening its menu
+
 ## 1.0.0 — first public release
 
 Sign-in with Google is in its testing period: until Google finishes reviewing
