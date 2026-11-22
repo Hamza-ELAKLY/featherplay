@@ -39,6 +39,10 @@ global Icons {
     out property <string> add: "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z";
     out property <string> chevron-down: "M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z";
     out property <string> chevron-right: "M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z";
+    // Play all: lines of a list with a play mark.
+    out property <string> play-list: "M19 9H2v2h17V9zm0-4H2v2h17V5zM2 15h13v-2H2v2zm15-2v6l5-3-5-3z";
+    // Clear all: lines of a list, the top one shorter.
+    out property <string> clear-all: "M5 13h14v-2H5v2zm-2 4h14v-2H3v2zM7 7v2h14V7H7z";
     out property <string> close: "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z";
     out property <string> search: "M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z";
     out property <string> muted: "M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.8 8.8 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z";
@@ -1695,26 +1699,30 @@ component Tab inherits Rectangle {
     in property <string> text;
     in property <string> count;
     in property <bool> selected;
+    // Short of room: smaller text and padding, and the count only on the selected tab.
+    in property <bool> tight;
     callback clicked;
 
     height: 30px;
+    // 14 px either side of the text, down to 8 when the tabs are short of room (5 tight).
+    preferred-width: label.preferred-width + 28px;
+    min-width: label.preferred-width + (root.tight ? 10px : 16px);
     border-radius: 9px;
     background: root.selected ? Theme.raised : touch.has-hover ? Theme.hover : transparent;
     animate background { duration: 160ms; }
-    HorizontalLayout {
-        padding-left: 14px;
-        padding-right: 14px;
+    label := HorizontalLayout {
+        alignment: center;
         spacing: 6px;
         Text {
             text: root.text;
-            font-size: 13px;
+            font-size: root.tight ? 12px : 13px;
             font-weight: root.selected ? 700 : 600;
             color: root.selected ? Theme.text : Theme.muted;
             vertical-alignment: center;
         }
-        if root.count != "": Text {
+        if root.count != "" && (root.selected || !root.tight): Text {
             text: root.count;
-            font-size: 13px;
+            font-size: root.tight ? 12px : 13px;
             font-weight: 700;
             color: root.selected ? Theme.accent-text : Theme.faint;
             vertical-alignment: center;
@@ -1971,6 +1979,14 @@ export component AppWindow inherits Window {
     private property <float> about-shown: root.about-open ? 1 : 0;
     animate about-shown { duration: 260ms; easing: ease-out; }
     private property <float> sheet-shown: root.settings-open ? 1 : 0;
+    // Room beside the tabs for the list's button once the tabs have given up what padding
+    // they can: the window less its 20 px sides, the tabs at their narrowest and the gap.
+    // Short of the button's width, it shows as an icon.
+    private property <length> tab-action-room: root.width - 40px - tabs-box.min-width - 12px;
+    // Five tabs (search results among them) in a narrow window: the tabs get tight.
+    private property <bool> tabs-tight: (root.searching || root.results.length > 0) && root.width < 440px;
+    private property <bool> compact-clear: root.tab-action-room < 58px;
+    private property <bool> compact-play-all: root.tab-action-room < 72px;
     animate sheet-shown { duration: 260ms; easing: ease-out; }
 
     // The widgets' palette is told the theme (or to follow the system), and the window's
@@ -2596,11 +2612,13 @@ export component AppWindow inherits Window {
                 }
             }
 
+            // The tabs, and the open list's button at the far end.
             HorizontalLayout {
                 spacing: 12px;
+                alignment: space-between;
                 height: 38px;
                 vertical-stretch: 0;
-                Rectangle {
+                tabs-box := Rectangle {
                     border-radius: 12px;
                     background: Theme.surface;
                     border-width: 1px;
@@ -2610,49 +2628,89 @@ export component AppWindow inherits Window {
                         spacing: 2px;
                         Tab {
                             text: "Queue";
+                            tight: root.tabs-tight;
                             count: root.queue.length > 0 ? "\{root.queue.length}" : "";
                             selected: root.tab == 0;
                             clicked => { root.tab = 0; }
                         }
                         Tab {
                             text: "History";
+                            tight: root.tabs-tight;
                             selected: root.tab == 1;
                             clicked => { root.tab = 1; }
                         }
                         Tab {
                             text: "Pinned";
+                            tight: root.tabs-tight;
                             count: root.pins.length + root.pinned-lists.length > 0 ? "\{root.pins.length + root.pinned-lists.length}" : "";
                             selected: root.tab == 2;
                             clicked => { root.tab = 2; }
                         }
                         Tab {
                             text: "Library";
+                            tight: root.tabs-tight;
                             selected: root.tab == 4;
                             clicked => { root.tab = 4; }
                         }
                         if root.searching || root.results.length > 0: Tab {
                             text: root.searching ? "Searching…" : "Results";
+                            tight: root.tabs-tight;
                             selected: root.tab == 3;
                             clicked => { root.tab = 3; }
                         }
                     }
                 }
-                Rectangle { horizontal-stretch: 1; }
-                if root.tab == 0: TextButton {
+                if root.tab == 0 && !root.compact-clear: TextButton {
                     y: (parent.height - self.height) / 2;
                     text: "Clear";
                     enabled: root.queue.length > 0;
                     clicked => { root.clear-queue(); }
                 }
-                if root.tab == 1: TextButton {
+                if root.tab == 0 && root.compact-clear: IconButton {
+                    y: (parent.height - self.height) / 2;
+                    width: 34px;
+                    height: 34px;
+                    accessible-role: button;
+                    accessible-label: "Clear the queue";
+                    icon: Icons.clear-all;
+                    icon-size: 18px;
+                    subtle: true;
+                    enabled: root.queue.length > 0;
+                    clicked => { root.clear-queue(); }
+                }
+                if root.tab == 1 && !root.compact-clear: TextButton {
                     y: (parent.height - self.height) / 2;
                     text: "Clear";
                     enabled: root.history.length > 0;
                     clicked => { root.clear-history(); }
                 }
-                if root.tab == 2: TextButton {
+                if root.tab == 1 && root.compact-clear: IconButton {
+                    y: (parent.height - self.height) / 2;
+                    width: 34px;
+                    height: 34px;
+                    accessible-role: button;
+                    accessible-label: "Clear history";
+                    icon: Icons.clear-all;
+                    icon-size: 18px;
+                    subtle: true;
+                    enabled: root.history.length > 0;
+                    clicked => { root.clear-history(); }
+                }
+                if root.tab == 2 && !root.compact-play-all: TextButton {
                     y: (parent.height - self.height) / 2;
                     text: "Play all";
+                    enabled: root.pins.length > 0;
+                    clicked => { root.play-all-pins(); }
+                }
+                if root.tab == 2 && root.compact-play-all: IconButton {
+                    y: (parent.height - self.height) / 2;
+                    width: 34px;
+                    height: 34px;
+                    accessible-role: button;
+                    accessible-label: "Play all pins";
+                    icon: Icons.play-list;
+                    icon-size: 18px;
+                    subtle: true;
                     enabled: root.pins.length > 0;
                     clicked => { root.play-all-pins(); }
                 }
