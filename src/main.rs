@@ -2001,6 +2001,36 @@ mod ui_tests {
     }
 
     #[test]
+    fn a_long_library_has_a_scroll_rail() {
+        let ui = window(0);
+        ui.set_account_state(3);
+        ui.set_tab(4);
+        let lists = |n: usize| {
+            let rows: Vec<LibraryRow> = (0..n)
+                .map(|i| LibraryRow {
+                    id: format!("PL{i}").into(),
+                    title: format!("Playlist {i}").into(),
+                    meta: "Public · 12 tracks".into(),
+                    ..Default::default()
+                })
+                .collect();
+            ui.set_library(ModelRc::new(VecModel::from(rows)));
+            settle();
+        };
+        // Only the Library's list is on screen in this tab, so any rail found is its.
+        let rail = || i_slint_backend_testing::ElementHandle::find_by_element_type_name(&ui, "ScrollRail").next();
+        lists(3);
+        lists(1);
+        assert!(rail().is_none(), "one playlist fits: no rail");
+        lists(40);
+        let rail = rail().expect("forty playlists: a rail to scroll them with");
+        assert!(rail.size().height > 100.0, "the rail runs the list's height: {}", rail.size().height);
+        if let Ok(dir) = std::env::var("FEATHERPLAY_SNAPSHOTS") {
+            snapshot(&ui, &format!("{dir}/library-rail.png"));
+        }
+    }
+
+    #[test]
     fn about_shows_the_version_and_slints_attribution() {
         let ui = window(0);
         ui.set_app_version(env!("CARGO_PKG_VERSION").into());

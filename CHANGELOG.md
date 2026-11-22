@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The Library's list of playlists has a scroll rail, like the other lists
+
 ## 1.0.0 — first public release
 
 Sign-in with Google is in its testing period: until Google finishes reviewing
