@@ -46,10 +46,9 @@ const THEME_WIPE_TIME: Duration = Duration::from_millis(700);
 // and with the second too when music was playing, so it carries on.
 const UPDATED_ARG: &str = "--updated";
 const PLAYING_ARG: &str = "--playing";
-// Featherplay looks for a new version once a day, a little after it starts.
-const APP_CHECK_FILE: &str = "app-checked";
-const APP_CHECK_EVERY: Duration = Duration::from_secs(24 * 3600);
-const APP_CHECK_DELAY: Duration = Duration::from_secs(20);
+// Featherplay looks for a new version each time it starts, once the window is up and the
+// session it picks up has started loading.
+const APP_CHECK_DELAY: Duration = Duration::from_secs(5);
 // Set once an update is in place: the app restarts into it as it quits.
 static RESTART: AtomicBool = AtomicBool::new(false);
 
@@ -102,6 +101,7 @@ fn main() -> Result<(), slint::PlatformError> {
     });
     ui.set_show_thumbs(settings.thumbnails);
     ui.set_show_remaining(settings.remaining);
+    ui.set_auto_updates(settings.auto_updates);
     playback.set_volume(settings.volume);
 
     let lists = Lists::default();
@@ -617,19 +617,30 @@ fn main() -> Result<(), slint::PlatformError> {
     // Updating Featherplay itself.
     let found: Arc<Mutex<Option<Release>>> = Arc::default();
     ui.on_check_app_update({
-        let (ui, found, data) = (ui.as_weak(), found.clone(), data_dir.clone());
-        move || check_for_update(ui.clone(), found.clone(), data.clone(), false)
+        let (ui, found) = (ui.as_weak(), found.clone());
+        move || check_for_update(ui.clone(), found.clone(), false)
     });
     ui.on_install_app_update({
         let (ui, found) = (ui.as_weak(), found.clone());
         move || install_update(ui.clone(), found.clone())
     });
-    let due = store::last_check(&data_dir, APP_CHECK_FILE)
-        .and_then(|at| at.elapsed().ok())
-        .is_none_or(|age| age >= APP_CHECK_EVERY);
-    if due {
-        let (ui, found, data) = (ui.as_weak(), found.clone(), data_dir.clone());
-        Timer::single_shot(APP_CHECK_DELAY, move || check_for_update(ui, found, data, true));
+    ui.on_open_release_notes({
+        let found = found.clone();
+        move || {
+            if let Some(release) = found.lock().unwrap().as_ref() {
+                open_in_browser(&release.page);
+            }
+        }
+    });
+    // Each start asks once, shortly after opening; a new version shows as a notice.
+    if settings.auto_updates {
+        let (ui, found) = (ui.as_weak(), found.clone());
+        Timer::single_shot(APP_CHECK_DELAY, move || {
+            // Unless turned off in the meantime.
+            if ui.upgrade().is_some_and(|ui| ui.get_auto_updates()) {
+                check_for_update(ui, found, true);
+            }
+        });
     }
 
     // A new theme comes in with a diagonal wipe over a picture of the old one.
@@ -669,6 +680,7 @@ fn main() -> Result<(), slint::PlatformError> {
         move || app.update_ytdlp()
     });
     app.check_ytdlp();
+    app.set_auto_updates(settings.auto_updates);
     app.update_ytdlp_if_due();
 
     if let Some(place) = settings.window.filter(WindowPlace::plausible) {
@@ -884,6 +896,7 @@ fn main() -> Result<(), slint::PlatformError> {
                 // Off means off: let go of the ones held, not just stop showing them.
                 thumbs.forget_small();
             }
+            app.set_auto_updates(ui.get_auto_updates());
             let settings = Settings {
                 volume: ui.get_volume(),
                 repeat: app.repeat(),
@@ -892,6 +905,7 @@ fn main() -> Result<(), slint::PlatformError> {
                 theme,
                 thumbnails,
                 remaining: ui.get_show_remaining(),
+                auto_updates: ui.get_auto_updates(),
                 // Set by hand in the file: kept as they are.
                 google_client_id: own_client.0.clone(),
                 google_client_secret: own_client.1.clone(),
@@ -932,27 +946,18 @@ fn main() -> Result<(), slint::PlatformError> {
     result
 }
 
-/// Asks GitHub whether there is a newer version. `quiet` is the daily check: it says
-/// nothing unless there is one, and then says so once.
-fn check_for_update(
-    ui: slint::Weak<AppWindow>,
-    found: Arc<Mutex<Option<Release>>>,
-    data: std::path::PathBuf,
-    quiet: bool,
-) {
+/// Asks GitHub whether there is a newer version. `quiet` is the check at start: it shows
+/// nothing unless there is one, which the window then offers in a notice.
+fn check_for_update(ui: slint::Weak<AppWindow>, found: Arc<Mutex<Option<Release>>>, quiet: bool) {
     if let (false, Some(ui)) = (quiet, ui.upgrade()) {
         ui.set_app_update_state(1);
     }
     std::thread::spawn(move || {
         let result = update::check();
-        store::mark_check(&data, APP_CHECK_FILE).ok();
         ui.upgrade_in_event_loop(move |ui| match result {
             Ok(Some(release)) => {
                 ui.set_app_update_version(release.version.clone().into());
                 ui.set_app_update_state(3);
-                if quiet {
-                    ui.set_status(say::app_update(&release.version).into());
-                }
                 *found.lock().unwrap() = Some(release);
             }
             Ok(None) if !quiet => ui.set_app_update_state(2),
@@ -2001,6 +2006,106 @@ mod ui_tests {
     }
 
     #[test]
+    fn the_settings_fit_the_smallest_window_and_updates_can_be_turned_off() {
+        let ui = window(0);
+        // The smallest the window goes, with the tallest account section (signed out).
+        ui.window().set_size(slint::LogicalSize::new(380.0, 596.0));
+        ui.set_account_state(1);
+        ui.set_settings_open(true);
+        settle();
+        let content = i_slint_backend_testing::ElementHandle::find_by_element_id(&ui, "AppWindow::sheet-content")
+            .next()
+            .expect("the settings sheet");
+        let top = content.absolute_position().y;
+        assert!(top >= 0.0, "the sheet's top is on screen at the smallest size: {top}");
+        if let Ok(dir) = std::env::var("FEATHERPLAY_SNAPSHOTS") {
+            snapshot(&ui, &format!("{dir}/settings-smallest.png"));
+        }
+
+        let switch = || {
+            i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, "Check for updates automatically")
+                .find(|e| e.accessible_role() == Some(i_slint_backend_testing::AccessibleRole::Checkbox))
+                .expect("the automatic updates switch")
+        };
+        assert!(ui.get_auto_updates(), "on by default");
+        assert_eq!(switch().accessible_checked(), Some(true));
+        let saved = Rc::new(std::cell::Cell::new(0));
+        ui.on_settings_changed({
+            let saved = saved.clone();
+            move || saved.set(saved.get() + 1)
+        });
+        switch().invoke_accessible_default_action();
+        settle();
+        assert!(!ui.get_auto_updates() && saved.get() == 1, "turned off and saved");
+        let says = |text: &str| i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, text).count();
+        assert_eq!(says("Only when you click Check now."), 1);
+
+        // An update on offer adds a line under Featherplay's version: still on screen.
+        ui.set_app_update_version("10.0.0".into());
+        ui.set_app_update_state(3);
+        settle();
+        let top = content.absolute_position().y;
+        assert!(top >= 0.0, "with an update on offer too: {top}");
+        if let Ok(dir) = std::env::var("FEATHERPLAY_SNAPSHOTS") {
+            snapshot(&ui, &format!("{dir}/settings-updates-off.png"));
+        }
+    }
+
+    #[test]
+    fn a_new_version_shows_a_notice_until_put_off() {
+        let ui = window(3);
+        let notice = || {
+            i_slint_backend_testing::ElementHandle::find_by_element_id(&ui, "AppWindow::update-notice")
+                .next()
+                .is_some_and(|n| n.absolute_position().y + n.size().height <= 800.0)
+        };
+        let label = |text: &str| i_slint_backend_testing::ElementHandle::find_by_accessible_label(&ui, text).next();
+        settle();
+        assert!(!notice(), "nothing to say yet");
+
+        // A check that failed before finding anything stays in Settings.
+        ui.set_app_update_error("no connection".into());
+        ui.set_app_update_state(5);
+        settle();
+        assert!(!notice(), "a failed check isn't a notice");
+
+        ui.set_app_update_version("1.1.0".into());
+        ui.set_app_update_state(3);
+        settle();
+        assert!(notice(), "a new version is offered");
+        assert!(label("Update available").is_some() && label("v1.1.0 ·").is_some());
+
+        ui.set_settings_open(true);
+        settle();
+        assert!(!notice(), "Settings shows it there instead");
+        ui.set_settings_open(false);
+        settle();
+        assert!(notice());
+
+        let installs = Rc::new(std::cell::Cell::new(0));
+        ui.on_install_app_update({
+            let installs = installs.clone();
+            move || installs.set(installs.get() + 1)
+        });
+        label("Update").expect("an Update button").invoke_accessible_default_action();
+        assert_eq!(installs.get(), 1);
+
+        // The install failed: said in the notice, with another try.
+        ui.set_app_update_error("the download was cut off".into());
+        ui.set_app_update_state(5);
+        settle();
+        assert!(notice() && label("Couldn't update").is_some());
+        label("Try again").expect("a Try again button").invoke_accessible_default_action();
+        assert_eq!(installs.get(), 2);
+
+        ui.set_app_update_state(3);
+        settle();
+        label("Later").expect("a Later button").invoke_accessible_default_action();
+        settle();
+        assert!(!notice() && ui.get_update_later(), "put off until the next start");
+    }
+
+    #[test]
     fn about_shows_the_version_and_slints_attribution() {
         let ui = window(0);
         ui.set_app_version(env!("CARGO_PKG_VERSION").into());
@@ -2722,6 +2827,58 @@ mod ui_tests {
         assert_eq!(card_height(&ui), 56.0);
         assert!(frames > 10);
         assert_ne!(before, reference, "the wheel did scroll");
+    }
+
+    /// Pictures of the update notice, for looking at: FEATHERPLAY_SNAPSHOTS=<dir>.
+    #[test]
+    #[ignore = "pictures: FEATHERPLAY_SNAPSHOTS=<dir> cargo test -- --ignored update_notice_examples"]
+    fn update_notice_examples() {
+        let Ok(dir) = std::env::var("FEATHERPLAY_SNAPSHOTS") else { return };
+        let ui = window(0);
+        let rows: Vec<QueueRow> = [
+            ("Mozart - Overture to The marriage of Figaro, K 492", "Only The Classicals · 4:01"),
+            ("Johann Sebastian Bach - Goldberg Variations BWV 988: Variation 1", "The White of Lightning · 1:55"),
+            ("Johann Sebastian Bach - Goldberg Variations BWV 988: Variation 2", "The White of Lightning · 1:28"),
+            ("Musopen - Ballade No. 1 in G Minor, Op. 23", "Aaron Dunn · 2:01"),
+            ("Johann Sebastian Bach - Goldberg Variations BWV 988: Variation 8", "The White of Lightning · 4:53"),
+            ("Erik Satie - Gymnopédie No. 1", "Musopen · 3:05"),
+        ]
+        .iter()
+        .map(|(t, m)| QueueRow { title: (*t).into(), meta: (*m).into(), ..Default::default() })
+        .collect();
+        ui.set_queue(ModelRc::new(VecModel::from(rows)));
+        ui.set_has_track(true);
+        ui.set_playing(true);
+        ui.set_track_title("Mozart - Overture to The marriage of Figaro, K 492 (Musopen Symphony)".into());
+        ui.set_track_channel("Only The Classicals".into());
+        ui.set_up_next("Johann Sebastian Bach - Goldberg Variations BWV 988: Variation 1".into());
+        ui.set_duration(241.0);
+        ui.set_position(96.0);
+        let levels: Vec<f32> =
+            (0..120).map(|i| 0.35 + 0.6 * ((i as f32 * 0.37).sin() * (i as f32 * 0.11).cos()).abs()).collect();
+        ui.set_levels(ModelRc::new(VecModel::from(levels)));
+        ui.set_ytdlp_version("2026.11.17".into());
+        ui.set_app_update_version("1.1.0".into());
+        for (theme, tag) in [(1, "dark"), (2, "light")] {
+            ui.set_theme_mode(theme);
+            for (width, height, size) in [(480.0, 800.0, "wide"), (380.0, 640.0, "narrow")] {
+                ui.window().set_size(slint::LogicalSize::new(width, height));
+                ui.set_app_update_state(3);
+                settle();
+                snapshot(&ui, &format!("{dir}/notice-{tag}-{size}-available.png"));
+                if size == "wide" {
+                    ui.set_app_update_state(4);
+                    ui.set_app_update_progress(0.42);
+                    settle();
+                    snapshot(&ui, &format!("{dir}/notice-{tag}-{size}-downloading.png"));
+                    ui.set_app_update_state(3);
+                    ui.set_status(say::added("Erik Satie - Gymnopédie No. 1").into());
+                    settle();
+                    snapshot(&ui, &format!("{dir}/notice-{tag}-{size}-with-message.png"));
+                    ui.set_status("".into());
+                }
+            }
+        }
     }
 
     /// Pictures of messages, for looking at: FEATHERPLAY_SNAPSHOTS=<dir>.

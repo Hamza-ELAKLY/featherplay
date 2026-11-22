@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- A new version of Featherplay shows as a notice when you open the app, with What's
+  new, Update and Later; it was checked once a day and mentioned only briefly
+- Settings has a switch to stop checking for updates automatically (Featherplay each
+  time it opens, yt-dlp once a week); Check now still works when it's off
+- Screen readers announce Settings' switches and whether they're on
+
 ## 1.0.0 — first public release
 
 Sign-in with Google is in its testing period: until Google finishes reviewing

@@ -6,7 +6,7 @@
 //! long playlists cost nothing up front and stream URLs never sit around expiring.
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -179,6 +179,8 @@ pub struct App {
     /// changed, the cure is a new yt-dlp, fetched at once (see `rescue_ytdlp`).
     failures: AtomicUsize,
     rescued: Mutex<Option<Instant>>,
+    /// Whether yt-dlp may be updated without being asked (the Settings switch).
+    auto_updates: AtomicBool,
     private_lists: Mutex<Option<PrivateLists>>,
     notify: Box<dyn Fn(Event) + Send + Sync>,
 }
@@ -211,6 +213,7 @@ impl App {
             opening: AtomicUsize::new(0),
             failures: AtomicUsize::new(0),
             rescued: Mutex::new(None),
+            auto_updates: AtomicBool::new(true),
             private_lists: Mutex::new(None),
             notify: Box::new(notify),
         })
@@ -859,19 +862,33 @@ impl App {
         });
     }
 
+    /// Turns updating yt-dlp without being asked on or off (Settings). Off, it's updated
+    /// only from Settings.
+    pub fn set_auto_updates(&self, on: bool) {
+        self.auto_updates.store(on, Ordering::SeqCst);
+    }
+
+    fn auto_updates(&self) -> bool {
+        self.auto_updates.load(Ordering::SeqCst)
+    }
+
     /// Updates yt-dlp in the background when it hasn't been checked for a week. YouTube
     /// changes often, and an old yt-dlp is the likeliest reason for links to stop working.
     /// Quiet unless there was something new.
     pub fn update_ytdlp_if_due(self: &Arc<Self>) {
         let due = store::last_update_check(&self.data)
             .is_none_or(|at| at.elapsed().unwrap_or(YTDLP_CHECK_INTERVAL) >= YTDLP_CHECK_INTERVAL);
-        if !due {
+        if !due || !self.auto_updates() {
             return;
         }
         let app = self.clone();
         std::thread::spawn(move || {
             // Opening the window and its first link come first.
             std::thread::sleep(YTDLP_CHECK_DELAY);
+            // Turned off in the meantime.
+            if !app.auto_updates() {
+                return;
+            }
             if let Ok(Updated::To(version)) = app.run_ytdlp_update() {
                 app.status(say::ytdlp_updated(&version));
             }
@@ -880,7 +897,8 @@ impl App {
 
     /// Several tracks in a row failed to load: YouTube has likely changed, and a newer
     /// yt-dlp is the usual cure. Updates it now rather than at the weekly check, at most
-    /// once an hour, so a network that's down doesn't keep asking.
+    /// once an hour, so a network that's down doesn't keep asking. With automatic updates
+    /// off, it only suggests updating.
     fn rescue_ytdlp(self: &Arc<Self>) {
         {
             let mut rescued = self.rescued.lock().unwrap();
@@ -890,6 +908,11 @@ impl App {
             *rescued = Some(Instant::now());
         }
         self.failures.store(0, Ordering::SeqCst);
+        if !self.auto_updates() {
+            log::write("Tracks kept failing to load; automatic updates are off, so yt-dlp wasn't updated");
+            self.status(say::ytdlp_may_be_old());
+            return;
+        }
         let app = self.clone();
         std::thread::spawn(move || match app.run_ytdlp_update() {
             Ok(Updated::To(version)) => {
