@@ -13,6 +13,8 @@ Featherplay is a lightweight desktop player for the audio of YouTube videos, pla
 and Mixes. It runs as a single portable executable, uses about 50 MB of memory while
 playing, and has no ads or telemetry. Signing in is optional, view-only, and through Google's own page.
 
+Website: [hamza-elakly.github.io/featherplay](https://hamza-elakly.github.io/featherplay/)
+
 <p align="center">
   <img src="assets/showcase.webp" alt="Featherplay in use: a pasted link plays next, its waveform appears, another link is added to the queue, and the theme is switched from dark to light and back in Settings" width="500">
 </p>
@@ -45,8 +47,9 @@ Requires Windows 10 or 11, 64-bit.
 
 yt-dlp is included in the folder and kept up to date by the app.
 
-The executable isn't code-signed yet (signing is under way), so on first run Windows may
-show *"Windows protected your PC"*: choose **More info → Run anyway**.
+The executable isn't code-signed yet (signing is under way; see the
+[code signing policy](CODE_SIGNING.md)), so on first run Windows may show *"Windows
+protected your PC"*: choose **More info → Run anyway**.
 
 To check a download against the release's `SHA256SUMS.txt`:
 
@@ -209,6 +212,7 @@ keyboard, drag) with the real renderer.
 | `src/update.rs` | Self-update |
 | `examples/` | Headless programs that exercise the player against YouTube |
 | `scripts/` | Release packaging, licence notices, README assets |
+| `site/`, `scripts/site.py` | The website, with `PRIVACY.md` and `CODE_SIGNING.md` as pages |
 
 ## Contributing
 

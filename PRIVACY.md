@@ -56,5 +56,6 @@ open a [discussion](https://github.com/Hamza-ELAKLY/featherplay/discussions) or 
 
 ## Changes
 
-This policy changes with the app; its history is in this repository. Last updated:
+This policy changes with the app; its history is in
+[Featherplay's repository](https://github.com/Hamza-ELAKLY/featherplay/commits/main/PRIVACY.md). Last updated:
 20 November 2026.
